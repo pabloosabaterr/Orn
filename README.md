@@ -49,7 +49,8 @@ Many low-level languages have steep learning curves that intimidate developers f
 ## Performance Architecture
 
 Orn uses a **zero-copy reference design** inspired by production compilers like Clang and Rust:
-```
+
+```md
 Source Buffer (one malloc)
     ↓
 Tokens (ptr+len references)
@@ -66,10 +67,11 @@ Assembly (new strings)
 ```
 
 **Benefits:**
-- Single source allocation, thousands fewer mallocs
-- No duplicate string storage throughout pipeline
-- Better memory locality and faster compilation
-- References become copies only in final assembly output
+
+* Single source allocation, thousands fewer mallocs
+* No duplicate string storage throughout pipeline
+* Better memory locality and faster compilation
+* References become copies only in final assembly output
 
 Traditional compilers duplicate every identifier dozens of times. Orn references the original buffer until code generation.
 
@@ -87,6 +89,7 @@ You'll need:
 * **[Valgrind](https://valgrind.org/)** *(optional)* – Memory debugging
 
 ### Installation
+
 ```bash
 # Clone the repository
 git clone https://github.com/Blopaa/Orn.git
@@ -99,11 +102,13 @@ cmake --build .
 ```
 
 You can now run Orn on your own programs:
+
 ```bash
 ./orn program.orn
 ```
 
 Or, for verbose compilation output:
+
 ```bash
 ./orn --verbose program.orn
 ```
@@ -115,7 +120,8 @@ This will perform lexical analysis, parsing, semantic analysis, and IR generatio
 ## Usage
 
 ### Example Program
-```typescript
+
+```ts
 const x: int = 42;
 let rate: float = 3.14;
 const msg: string = "Hello, World!";
@@ -142,7 +148,8 @@ print(add(3, 5));
 ### Error Example
 
 Orn provides actionable error messages:
-```
+
+```ts
 error [E2005]: cannot assign to constant (x)
   --> source.orn:2:1
    |
