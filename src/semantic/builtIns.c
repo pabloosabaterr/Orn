@@ -43,22 +43,6 @@ static BuiltInFunction builtInFunctions[] = {
         .id = BUILTIN_PRINT_BOOL
     },
     {
-        .name = "read",
-        .returnType = TYPE_INT,
-        .paramTypes = NULL,
-        .paramNames = NULL,
-        .paramCount = 0,
-        .id = BUILTIN_READ_INT
-    },
-    {
-        .name = "readln",
-        .returnType = TYPE_STRING,
-        .paramTypes = NULL,
-        .paramNames = NULL,
-        .paramCount = 0,
-        .id = BUILTIN_READ_STRING
-    },
-    {
         .name = "print",
         .returnType = TYPE_VOID,
         .paramTypes = NULL,
@@ -76,7 +60,7 @@ static void initBuiltInsParams() {
     builtInFunctions[0].paramTypes = malloc(sizeof(DataType));
     builtInFunctions[0].paramTypes[0] = TYPE_INT;
     builtInFunctions[0].paramNames = malloc(sizeof(char *));
-    builtInFunctions[0].paramNames[0] = strdup("message");
+    builtInFunctions[0].paramNames[0] = strdup("value");
 
     builtInFunctions[1].paramTypes = malloc(sizeof(DataType));
     builtInFunctions[1].paramTypes[0] = TYPE_STRING;
@@ -93,18 +77,10 @@ static void initBuiltInsParams() {
     builtInFunctions[3].paramNames = malloc(sizeof(char *));
     builtInFunctions[3].paramNames[0] = strdup("value");
 
-    // read() -> int (no parameters, reads from stdin)
-    builtInFunctions[4].paramTypes = NULL;
-    builtInFunctions[4].paramNames = NULL;
-
-    // scan() -> string
-    builtInFunctions[5].paramTypes = NULL;
-    builtInFunctions[5].paramNames = NULL;
-
-    builtInFunctions[6].paramTypes = malloc(sizeof(DataType));
-    builtInFunctions[6].paramTypes[0] = TYPE_DOUBLE;
-    builtInFunctions[6].paramNames = malloc(sizeof(char *));
-    builtInFunctions[6].paramNames[0] = strdup("value");
+    builtInFunctions[4].paramTypes = malloc(sizeof(DataType));
+    builtInFunctions[4].paramTypes[0] = TYPE_DOUBLE;
+    builtInFunctions[4].paramNames = malloc(sizeof(char *));
+    builtInFunctions[4].paramNames[0] = strdup("value");
 
     builtInsInit = 1;
 }

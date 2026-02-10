@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(Compiler C)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -O3")
 
 # Source files (excluding main.c for library)
 set(LIB_SOURCES

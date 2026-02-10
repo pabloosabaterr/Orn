@@ -129,6 +129,7 @@ typedef enum {
     BITWISE_XOR,
     BITWISE_LSHIFT,
     BITWISE_RSHIFT,
+    BITWISE_NOT,
 
     // Binary arithmetic operators
     ADD_OP,
@@ -184,9 +185,11 @@ typedef enum {
     RETURN_TYPE,
 
     // Structs
+    STRUCT_LIT,
     STRUCT_DEFINITION,
     STRUCT_FIELD_LIST,
     STRUCT_FIELD,
+    STRUCT_FIELD_LIT,
     MEMBER_ACCESS,
 } NodeTypes;
 
@@ -220,6 +223,7 @@ static const NodeTypeMap nodeTypeMapping[] = {
     {BITWISE_XOR, "BITWISE_XOR"},
     {BITWISE_LSHIFT, "BITWISE_LSHIFT"},
     {BITWISE_RSHIFT, "BITWISE_RSHIFT"},
+    {BITWISE_NOT, "BITWISE_NOT"},
     {ADD_OP, "ADD_OP"},
     {SUB_OP, "SUB_OP"},
     {MUL_OP, "MUL_OP"},
@@ -277,6 +281,8 @@ static const NodeTypeMap nodeTypeMapping[] = {
     {NULL_LIT, "NULL"},
     {IMPORTDEC, "IMPORT"},
     {EXPORTDEC, "EXPORT"},
+    {STRUCT_LIT, "STRUCT_LIT"},
+    {STRUCT_FIELD_LIT, "FIELD_LIT"},
     {null_NODE, NULL} // Sentinel - must be last
 };
 
@@ -451,6 +457,7 @@ ASTNode parseStructField(TokenList* list, size_t* pos);
 NodeTypes getTypeNodeFromToken(TokenType type);
 ASTNode parseArrayDec(TokenList *list, size_t *pos, Token *varName);
 ASTNode parseArrLit(TokenList *list, size_t *pos);
+ASTNode parseStructLit(TokenList *list, size_t *pos);
 ASTNode parseArrayAccess(TokenList *list, size_t *pos, ASTNode arrNode);
 ASTNode parseImport(TokenList *list, size_t *pos);
 ASTNode parseExportFunction(TokenList* list, size_t* pos);

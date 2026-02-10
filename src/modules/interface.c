@@ -352,24 +352,6 @@ int addImportsToSymbolTable(SymbolTable table, ModuleInterface *iface) {
     return 1;
 }
 
-void freeModuleInterface(ModuleInterface *iface) {
-    if (!iface) return;
-
-    free(iface->moduleName);
-
-    ExportedFunction *func = iface->functions;
-    while (func) {
-        ExportedFunction *next = func->next;
-        free(func->name);
-        free(func->signature);
-        free(func->returnType);
-        free(func);
-        func = next;
-    }
-
-    free(iface);
-}
-
 static void freeExportedFields(ExportedField *field) {
     while (field) {
         ExportedField *next = field->next;
@@ -388,4 +370,23 @@ static void freeExportedStructs(ExportedStruct *es) {
         free(es);
         es = next;
     }
+}
+
+void freeModuleInterface(ModuleInterface *iface) {
+    if (!iface) return;
+
+    free(iface->moduleName);
+
+    ExportedFunction *func = iface->functions;
+    while (func) {
+        ExportedFunction *next = func->next;
+        free(func->name);
+        free(func->signature);
+        free(func->returnType);
+        free(func);
+        func = next;
+    }
+    freeExportedStructs(iface->structs);
+
+    free(iface);
 }

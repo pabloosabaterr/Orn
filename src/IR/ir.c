@@ -359,7 +359,9 @@ IrOpCode astOpToIrOp(NodeTypes nodeType) {
             
         case UNARY_MINUS_OP:
             return IR_NEG;
-            
+        case BITWISE_NOT: 
+            return IR_BIT_NOT;
+
         default:
             return IR_NOP;
     }
@@ -551,7 +553,8 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
     }
 
     case UNARY_MINUS_OP:
-    case LOGIC_NOT: {
+    case LOGIC_NOT:
+    case BITWISE_NOT: {
         ASTNode operand = node->children;
         IrOperand operandOp = generateExpressionIr(ctx, operand, typeCtx);
         IrOperand res = createTemp(ctx, operandOp.dataType);
@@ -670,7 +673,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
     case FUNCTION_CALL: {
         Symbol funcSymbol = lookupSymbol(typeCtx->current, node->start, node->length);
         int paramCount = 0;
-        if(funcSymbol && funcSymbol->returnedVar->type == TYPE_STRUCT){
+        if(funcSymbol && funcSymbol->type != TYPE_VOID && funcSymbol->returnedVar->type == TYPE_STRUCT){
             ++paramCount;
         }
         ASTNode argList = node->children;
@@ -689,7 +692,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         
         IrOperand result = (retType == IR_TYPE_VOID) ? createNone() : createTemp(ctx, retType);
         emitCall(ctx, result, node->start, node->length, paramCount);
-        
+        printf("bug\n");
         return result;
     }
 
@@ -774,7 +777,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         return res;
     }
 
-    case ARRAY_ACCESS:
+    case ARRAY_ACCESS:{
         ASTNode arrNode = node->children;
         ASTNode index = arrNode->brothers;
         IrOperand indexOp = generateExpressionIr(ctx, index, typeCtx);
@@ -787,7 +790,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         IrOperand result = createTemp(ctx, elemType);
         emitPointerLoad(ctx, result, arrayBase, indexOp);
         return result;
-
+    }
 
     default: return createNone();
     }
@@ -992,7 +995,6 @@ IrContext *generateIr(ASTNode ast, TypeCheckContext typeCtx){
     if(!ctx)  return NULL;
 
     generateStatementIr(ctx, ast, typeCtx);
-
     return ctx;
 }
 

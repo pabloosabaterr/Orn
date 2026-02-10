@@ -1,26 +1,8 @@
-/**
-* @file parser.c
- * @brief Implementation of recursive descent parser with operator precedence.
- *
- * Implements a hybrid parsing approach combining:
- * - Recursive descent parsing for statements and declarations
- * - Pratt parser (operator precedence parser) for expressions
- *
- * Key features:
- * - Proper operator precedence and associativity handling
- * - Block statement parsing with nested scopes
- * - Error recovery and detailed error reporting
- * - Memory-safe AST construction and cleanup
- * - Support for complex expressions with mixed operators
- *
- * The parser transforms a stream of tokens from the lexer into a complete
- * Abstract Syntax Tree (AST) ready for semantic analysis or code generation.
- */
-
 #include "parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "../errorHandling/errorHandling.h"
 #include "../lexer/lexer.h"
@@ -62,7 +44,7 @@ ASTNode parseType(TokenList* list, size_t* pos) {
 	}else{
         reportError(ERROR_EXPECTED_TYPE, 
                    createErrorContextFromParser(list, pos),
-                   "Expected type");
+                   "Expected valid type");
         return NULL;
     }      
     
@@ -128,6 +110,8 @@ const StatementHandler statementHandlers[] = {
 	{TK_NULL, NULL}
 };
 
+
+
 /**
  * @brief Parses primary expressions (literals, identifiers, parentheses).
  *
@@ -166,6 +150,10 @@ ASTNode parsePrimaryExp(TokenList * list, size_t *pos) {
 		return parseArrLit(list, pos);
 	}
 
+	if (token->type == TK_LBRACE){
+		return parseStructLit(list, pos);
+	}
+
     if (token->type == TK_NULL) {
         ASTNode nullNode;
         CREATE_NODE_OR_FAIL(nullNode, token, NULL_LIT, list, pos);
@@ -200,8 +188,7 @@ ASTNode parsePrimaryExp(TokenList * list, size_t *pos) {
 			ADVANCE_TOKEN(list, pos);
 
 			if (detectLitType(&list->tokens[*pos], list, pos) != VARIABLE) {
-				reportError(ERROR_EXPECTED_MEMBER_NAME, createErrorContextFromParser(list, pos),
-						   "Expected member name after '.'");
+				reportError(ERROR_EXPECTED_MEMBER_NAME, createErrorContextFromParser(list, pos), "Expected member name after '.'");
 				freeAST(node);
 				return NULL;
 			}
@@ -243,7 +230,7 @@ ASTNode parseUnary(TokenList * list, size_t *pos) {
 	// Handle prefix operators
 	if (token->type == TK_MINUS || token->type == TK_NOT ||
 		token->type == TK_INCR || token->type == TK_DECR ||
-		token->type == TK_PLUS) {
+		token->type == TK_PLUS || token->type == TK_BIT_NOT) {
 		Token * opToken = token;
 		ADVANCE_TOKEN(list, pos);
 
@@ -548,8 +535,7 @@ ASTNode parseParameter(TokenList *list, size_t *pos) {
     CREATE_NODE_OR_FAIL(paramNode, token, PARAMETER, list, pos);
     ADVANCE_TOKEN(list, pos);
 
-    EXPECT_AND_ADVANCE(list, pos, TK_COLON, ERROR_EXPECTED_COLON,
-                       "Expected ':' after parameter name");
+    EXPECT_AND_ADVANCE(list, pos, TK_COLON, ERROR_EXPECTED_COLON, "Expected ':' after parameter name");
 
     ASTNode typeNode = parseType(list, pos);
     if (!typeNode) {
@@ -584,8 +570,7 @@ ASTNode parseArg(TokenList* list, size_t* pos) {
  * @param parseElement Function to parse individual elements
  * @return List AST node or NULL on error
  */
-ASTNode parseCommaSeparatedLists(TokenList* list, size_t* pos, NodeTypes listType,
-								 ASTNode (*parseElement)(TokenList*, size_t*)) {
+ASTNode parseCommaSeparatedLists(TokenList* list, size_t* pos, NodeTypes listType, ASTNode (*parseElement)(TokenList*, size_t*)) {
 	EXPECT_AND_ADVANCE(list, pos, TK_LPAREN, ERROR_EXPECTED_OPENING_PAREN, "Expected '('");
 
 	ASTNode listNode;
@@ -781,15 +766,31 @@ ASTNode parseStructField(TokenList * list, size_t* pos) {
 	ADVANCE_TOKEN(list, pos);
 	EXPECT_AND_ADVANCE(list, pos, TK_COLON, ERROR_EXPECTED_COLON, "Expected ':' after field name");
 	ASTNode typeNode = parseType(list, pos);
-	if(!typeNode){
-		// Error already reported in parseType
-		return NULL;
-	}
+	if(!typeNode) return NULL;
 
 	ASTNode typeRefWrap;
 	CREATE_NODE_OR_FAIL(typeRefWrap, NULL, TYPE_REF, list, pos);
 	typeRefWrap->children = typeNode;
 	fieldNode->children = typeRefWrap;
+	return fieldNode;
+}
+
+/**
+ * todo: this function almost duplicates parseStructField it should be refactored to avoid it
+ */
+ASTNode parseStructFieldLit(TokenList *list, size_t *pos){
+	Token *name = &list->tokens[*pos];
+	if (detectLitType(name, list, pos) != VARIABLE) {
+		reportError(ERROR_EXPECTED_FIELD_NAME, createErrorContextFromParser(list, pos), "Expected field name in struct literal");
+		return NULL;
+	}
+	ASTNode fieldNode;
+	CREATE_NODE_OR_FAIL(fieldNode, name, STRUCT_FIELD_LIT, list, pos);
+	ADVANCE_TOKEN(list, pos);
+	EXPECT_AND_ADVANCE(list, pos, TK_COLON, ERROR_EXPECTED_COLON, "Expected ':' after field name in struct literal");
+	ASTNode valueNode = parseExpression(list, pos, PREC_NONE);
+	if(!valueNode) return NULL;
+	fieldNode->children = valueNode;
 	return fieldNode;
 }
 
@@ -885,6 +886,38 @@ ASTNode parseArrayDec(TokenList *list, size_t *pos, Token *varName) {
     arrayDefNode->children = typeRefNode;
     
     return arrayDefNode;
+}
+
+ASTNode parseStructLit(TokenList *list, size_t *pos) {
+	if(*pos >= list->count) return NULL;
+
+	Token *startToken = &list->tokens[*pos];
+	EXPECT_AND_ADVANCE(list, pos, TK_LBRACE, ERROR_EXPECTED_OPENING_BRACE, "Expected '{' for struct literal");
+
+	ASTNode structLitNode;
+	CREATE_NODE_OR_FAIL(structLitNode, startToken, STRUCT_LIT, list, pos);
+
+	// empty struct literal -> {} will set everything to 0
+	if (*pos < list->count && list->tokens[*pos].type == TK_RBRACE) {
+		ADVANCE_TOKEN(list, pos);
+		return structLitNode;
+	}
+
+	ASTNode lastField = NULL;
+	while (*pos < list->count && list->tokens[*pos].type != TK_RBRACE){
+		ASTNode fieldNode;
+		PARSE_OR_FAIL(fieldNode, parseStructFieldLit(list, pos));
+		if (!structLitNode->children) structLitNode->children = fieldNode;
+		else lastField->brothers = fieldNode;
+		lastField = fieldNode;
+		
+		// optional comma between fields
+		if(*pos < list->count && list->tokens[*pos].type == TK_COMMA){
+			ADVANCE_TOKEN(list, pos);
+		}
+	}
+	EXPECT_AND_ADVANCE(list, pos, TK_RBRACE, ERROR_EXPECTED_CLOSING_BRACE, "Expected '}' after struct literal");
+	return structLitNode;
 }
 
 /**
@@ -1044,7 +1077,7 @@ ASTNode parseDeclaration(TokenList* list, size_t* pos) {
 		ADVANCE_TOKEN(list, pos);
 		
 		// Check if the value is a reference (&expression)
-		int isRef = (*pos < list->count && list->tokens[*pos].type == TK_AMPERSAND);
+		int isRef = (*pos < list->count && list->tokens[*pos].type == TK_AMPERSAND);	
 		Token *refTok = NULL;
 		if(isRef){
 			refTok = &list->tokens[*pos];

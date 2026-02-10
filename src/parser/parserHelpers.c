@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "../errorHandling/errorHandling.h"
 #include "../lexer/lexer.h"
@@ -58,8 +59,12 @@ NodeTypes detectLitType(const Token * tok, TokenList * list, size_t * pos) {
 		return REF_BOOL;
 	}
 
+	// everything in a declaration that start with { is a struct lit ?
+	if(val[0] == '{'){
+		return STRUCT_LIT;
+	}
+
 	size_t start = (val[0] == '-') ? 1 : 0;
-	if (start >= len) goto checkVariable;
 
 	int hasDot = 0, allDigits = 1;
 	for (size_t i = start; i<len; i++) {
@@ -80,17 +85,16 @@ NodeTypes detectLitType(const Token * tok, TokenList * list, size_t * pos) {
         }
 		return REF_INT;
 	}
-
-	checkVariable:
-		if (isalpha(val[0]) || val[0] == '_') {
-			for (size_t i = 1; i<len; i++) {
-				if (!isalnum(val[i]) && val[i] != '_') {
-					reportError(ERROR_INVALID_EXPRESSION,createErrorContextFromParser(list, pos), extractText(tok->start, tok->length));
-					return null_NODE;
-				}
+	
+	if (isalpha(val[0]) || val[0] == '_') {
+		for (size_t i = 1; i<len; i++) {
+			if (!isalnum(val[i]) && val[i] != '_') {
+				reportError(ERROR_INVALID_EXPRESSION,createErrorContextFromParser(list, pos), extractText(tok->start, tok->length));
+				return null_NODE;
 			}
-			return VARIABLE;
 		}
+		return VARIABLE;
+	}
 
 	reportError(ERROR_INVALID_EXPRESSION,createErrorContextFromParser(list, pos), extractText(tok->start, tok->length));
 	return null_NODE;
@@ -231,6 +235,7 @@ NodeTypes getUnaryOpType(TokenType t) {
 		case TK_MINUS: return UNARY_MINUS_OP;
 		case TK_PLUS: return UNARY_PLUS_OP;
 		case TK_NOT: return LOGIC_NOT;
+		case TK_BIT_NOT: return BITWISE_NOT;
 		case TK_INCR: return PRE_INCREMENT;
 		case TK_DECR: return PRE_DECREMENT;
 		default: return null_NODE;

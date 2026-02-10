@@ -104,7 +104,7 @@ void loadOp(CodeGenContext *ctx, IrOperand *op, const char *reg){
             }
             break;
         case OPERAND_VAR:
-        case OPERAND_TEMP: 
+        case OPERAND_TEMP: {
             int off = op->type == OPERAND_VAR 
                 ? getVarOffset(ctx, op->value.var.name, op->value.var.nameLen) 
                 : getTempOffset(ctx, op->value.temp.tempNum, op->dataType);
@@ -122,7 +122,8 @@ void loadOp(CodeGenContext *ctx, IrOperand *op, const char *reg){
                                 getIntReg(reg, op->dataType));
                 break;
             }
-        break;
+            break;
+        }
         
         default: break;
     }
@@ -317,6 +318,9 @@ void genUnaryOp(CodeGenContext *ctx, IrInstruction *inst) {
                 break;
             case IR_NOT:
                 emitInstruction(ctx, "xor%s $1, %s", suffix, regA);
+                break;
+            case IR_BIT_NOT:
+                emitInstruction(ctx, "not%s %s", suffix, regA);
                 break;
             default:
                 break;
@@ -838,6 +842,7 @@ void generateInstruction(CodeGenContext *ctx, IrInstruction *inst, int *paramCou
             
         case IR_NEG:
         case IR_NOT:
+        case IR_BIT_NOT:    
             genUnaryOp(ctx, inst);
             break;
             

@@ -190,6 +190,11 @@ DataType getOperationResultType(DataType left, DataType right, NodeTypes op) {
     switch (op) {
         case ADD_OP:
         case SUB_OP:
+            // Pointer arithmetic
+            if (left == TYPE_POINTER && right == TYPE_INT) return TYPE_POINTER;
+            if (op == ADD_OP && left == TYPE_INT && right == TYPE_POINTER) return TYPE_POINTER;
+            if (op == SUB_OP && left == TYPE_POINTER && right == TYPE_POINTER) return TYPE_INT;
+            // fall through
         case MUL_OP:
         case DIV_OP:
         case MOD_OP:
@@ -546,6 +551,17 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
 
             return TYPE_INT;
         }
+
+        case BITWISE_NOT: {
+            DataType opType = getExpressionType(node->children, context);
+            if(opType == TYPE_INT) return TYPE_INT;
+            if(opType != TYPE_INT) {
+                REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context, "Bitwise NOT requires integer operand");
+                return TYPE_UNKNOWN;
+            }
+            return TYPE_UNKNOWN;
+        }
+
         case ADD_OP:
         case SUB_OP:
         case MUL_OP:
@@ -1722,7 +1738,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
             success = validateAssignment(node, context);
             break;
         case LET_DEC:
-        case CONST_DEC :
+        case CONST_DEC : {
             ASTNode varDef = node->children;
             if(!varDef){
                 repError(ERROR_INTERNAL_PARSER_ERROR, "Declaration wrapper has no child");
@@ -1731,6 +1747,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
             int isConst = node->nodeType == CONST_DEC;
             success = validateVariableDeclaration(varDef, context, isConst);
             break;
+        }
         case FUNCTION_DEFINITION:
             success = validateFunctionDef(node, context);
             break;
@@ -1820,6 +1837,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
         case PRE_DECREMENT:
         case POST_INCREMENT:
         case POST_DECREMENT:
+        case BITWISE_NOT:
             success = typeCheckChildren(node, context);
             if (success) {
                 DataType resultType = getExpressionType(node, context);

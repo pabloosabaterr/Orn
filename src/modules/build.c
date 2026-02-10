@@ -348,10 +348,9 @@ static int compileModule(BuildContext *ctx, Module *mod, int optLevel,
     }
     // Type check
     typeCheckAST(ast->root, source, mod->path, typeCtx);
-    
     // Extract exports for dependents
     mod->interface = extractExportsWithContext(ast->root, mod->name, typeCtx);
-    
+
     // Generate IR
     IrContext *ir = generateIr(ast->root, typeCtx);
     if (!ir) {
