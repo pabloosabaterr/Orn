@@ -329,8 +329,7 @@ int validateScalarInitialization(Symbol newSymbol, ASTNode node,
 
     DataType initType = getExpressionType(initExprForType, context);
     if (initType == TYPE_UNKNOWN) {
-        reportErrorWithText(ERROR_INTERNAL_TYPECHECKER_ERROR, node, context,
-                        "Cannot determine initialization type");
+        reportErrorWithText(ERROR_INTERNAL_TYPECHECKER_ERROR, node, context, "Cannot determine initialization type");
         return 0;
     }
     

@@ -10,18 +10,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #include "../IR/irHelpers.h"
 
 #include "errorHandling.h"
 #include "semanticHelpers.h"
 
 typedef enum {
-  STACK_SIZE_INT = 4,      
-  STACK_SIZE_FLOAT = 4,    
-  STACK_SIZE_BOOL = 1,     
-  STACK_SIZE_STRING = 8,   
-  STACK_SIZE_DOUBLE = 8, 
-  ALIGNMENT = 16
+    STACK_SIZE_INT = 4,      
+    STACK_SIZE_FLOAT = 4,    
+    STACK_SIZE_BOOL = 1,     
+    STACK_SIZE_STRING = 8,   
+    STACK_SIZE_DOUBLE = 8, 
+    ALIGNMENT = 16
 } StackSize;
 
 StackSize getStackSize(DataType type) {
@@ -867,6 +868,7 @@ int validateVariableDeclaration(ASTNode node, TypeCheckContext context, int isCo
     }
     
     int isArr = (node->nodeType == ARRAY_VARIABLE_DEFINITION);
+    int isStruct = node->children->children->nodeType == REF_CUSTOM;
     
     // Extract type information
     int pointerLevel = 0;
@@ -971,16 +973,16 @@ int validateVariableDeclaration(ASTNode node, TypeCheckContext context, int isCo
             if (!validateArrayInitialization(newSymbol, initNode, varType, isConst, context)) {
                 return 0;
             }
+        }else if(isStruct){
+            assert(0 && "Struct initialization validation not implemented yet");
         } else {
-            if (!validateScalarInitialization(newSymbol, node, varType, isConst, 
-                                             isMemRef, context)) {
+            if (!validateScalarInitialization(newSymbol, node, varType, isConst, isMemRef, context)) {
                 return 0;
             }
         }
     } else if (isConst) {
         // Const variables must be initialized
-        reportErrorWithText(ERROR_CONST_MUST_BE_INITIALIZED, node, context,
-                          "Const must be initialized");
+        reportErrorWithText(ERROR_CONST_MUST_BE_INITIALIZED, node, context, "Const must be initialized");
         return 0;
     }
     
