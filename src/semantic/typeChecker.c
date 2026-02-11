@@ -848,6 +848,7 @@ static ASTNode getBaseTypeFromPointerChain(ASTNode typeRefNode, int* outPointerL
     return current;
 }
 
+
 /** 
  * @brief Validates if a declaration is properly formed and adds it to the symbol table.
  * @param node AST node representing the variable declaration
@@ -975,6 +976,9 @@ int validateVariableDeclaration(ASTNode node, TypeCheckContext context, int isCo
             }
         }else if(isStruct){
             assert(0 && "Struct initialization validation not implemented yet");
+            if(!validateStructInlineInitialization(newSymbol, initNode, varType, isConst, context)){
+                return 0;
+            }
         } else {
             if (!validateScalarInitialization(newSymbol, node, varType, isConst, isMemRef, context)) {
                 return 0;

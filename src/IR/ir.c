@@ -831,37 +831,37 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
         }
         case LET_DEC:
         case CONST_DEC:
-            if (node->children) {
-                ASTNode varDef = node->children;
-                Symbol sym = lookupSymbol(typeCtx->current, varDef->start, varDef->length);
-                if(sym->type == TYPE_STRUCT){
-                    IrOperand var = createVar(varDef->start, varDef->length, IR_TYPE_POINTER);
-                    int totalSize = sym->structType->size;
-                    if(typeCtx->currentFunction && typeCtx->currentFunction->returnedVar == sym){
-                        emitCopy(ctx, var, createVar("__hidden_ptr", 13, IR_TYPE_POINTER));
-                    }else{
-                        emitAllocStruct(ctx, var, totalSize);
-                        if(varDef->children->brothers->children->nodeType == FUNCTION_CALL){
-                            IrOperand temp = createTemp(ctx, IR_TYPE_POINTER);
-                            emitUnary(ctx, IR_ADDROF, temp, var);
-                            emitBinary(ctx, IR_PARAM, createNone(), temp, createNone());
-                        }
+        if (node->children) {
+            ASTNode varDef = node->children;
+            Symbol sym = lookupSymbol(typeCtx->current, varDef->start, varDef->length);
+            if(sym->type == TYPE_STRUCT){
+                IrOperand var = createVar(varDef->start, varDef->length, IR_TYPE_POINTER);
+                int totalSize = sym->structType->size;
+                if(typeCtx->currentFunction && typeCtx->currentFunction->returnedVar == sym){
+                    emitCopy(ctx, var, createVar("__hidden_ptr", 13, IR_TYPE_POINTER));
+                }else{
+                    emitAllocStruct(ctx, var, totalSize);
+                    if(varDef->children->brothers && varDef->children->brothers->children->nodeType == FUNCTION_CALL){
+                        IrOperand temp = createTemp(ctx, IR_TYPE_POINTER);
+                        emitUnary(ctx, IR_ADDROF, temp, var);
+                        emitBinary(ctx, IR_PARAM, createNone(), temp, createNone());
                     }
+                }
+                
+                if (varDef->children && varDef->children->brothers) {
+                    ASTNode initValue = varDef->children->brothers->children;
+                    IrOperand srcOp = generateExpressionIr(ctx, initValue, typeCtx);
                     
-                    if (varDef->children && varDef->children->brothers) {
-                        ASTNode initValue = varDef->children->brothers->children;
-                        IrOperand srcOp = generateExpressionIr(ctx, initValue, typeCtx);
-                        
-                        if(varDef->children->brothers->children->nodeType != FUNCTION_CALL){
-                            StructField field = sym->structType->fields;
-                            while (field) {
-                                IrOperand temp = createTemp(ctx, symbolTypeToIrType(field->type));
-                                emitMemberLoad(ctx, temp, srcOp, field->offset);
-                                emitMemberStore(ctx, var, field->offset, temp);
-                                field = field->next;
-                            }
+                    if(varDef->children->brothers->children->nodeType != FUNCTION_CALL){
+                        StructField field = sym->structType->fields;
+                        while (field) {
+                            IrOperand temp = createTemp(ctx, symbolTypeToIrType(field->type));
+                            emitMemberLoad(ctx, temp, srcOp, field->offset);
+                            emitMemberStore(ctx, var, field->offset, temp);
+                            field = field->next;
                         }
                     }
+                }
                 }else{
                     generateStatementIr(ctx, node->children, typeCtx);
                 }
@@ -993,8 +993,9 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
 IrContext *generateIr(ASTNode ast, TypeCheckContext typeCtx){
     IrContext *ctx = createIrContext();
     if(!ctx)  return NULL;
-
+    printf("Starting IR generation\n");
     generateStatementIr(ctx, ast, typeCtx);
+    printf("Finished IR generation\n");
     return ctx;
 }
 

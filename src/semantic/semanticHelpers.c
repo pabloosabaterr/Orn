@@ -202,9 +202,7 @@ int validatePointerLevels(Symbol targetSym, Symbol sourceSym, ASTNode node,
     return 1;
 }
 
-int validateArrayLiteralInit(ASTNode arrLitNode, DataType expectedType, 
-                                    int expectedSize, int isConst, 
-                                    TypeCheckContext context) {
+int validateArrayLiteralInit(ASTNode arrLitNode, DataType expectedType, int expectedSize, int isConst, TypeCheckContext context) {
     if (arrLitNode->nodeType != ARRAY_LIT) return 0;
     
     int initCount = 0;
@@ -226,6 +224,7 @@ int validateArrayLiteralInit(ASTNode arrLitNode, DataType expectedType,
         elem = elem->brothers;
     }
     
+    // let dec can have initilization with less elements than declared, but not more
     if (initCount != expectedSize && isConst) {
         char msg[100];
         snprintf(msg, sizeof(msg), 
@@ -275,9 +274,28 @@ int validateArrayCopyInit(ASTNode sourceVarNode, Symbol targetSym,
     return 1;
 }
 
+int validateStructInlineInitialization(Symbol sym, ASTNode init, DataType type, int isConst, TypeCheckContext ctx){
+    ASTNode valNode = init;
+    // initilization neededness happens on caller
+    if(!valNode || valNode->nodeType != VALUE || !valNode->children){
+        return 1;
+    }
+    sym->isInitialized = 1;
+    ASTNode structLit = valNode->children;
+    if(structLit->nodeType == STRUCT_LIT){
+
+    }
+
+    return 1;
+}
+
+/**
+ * @brief Validates if a variable initialization is valid for scalar types.
+ */
 int validateArrayInitialization(Symbol newSymbol, ASTNode initNode, DataType varType, int isConst,
                                 TypeCheckContext context) {
     ASTNode valueNode = initNode;
+    // initialization neededness happens on caller
     if (!valueNode || valueNode->nodeType != VALUE || !valueNode->children) {
         return 1;
     }
@@ -285,6 +303,7 @@ int validateArrayInitialization(Symbol newSymbol, ASTNode initNode, DataType var
     ASTNode arrLit = valueNode->children;
 
     if (arrLit->nodeType == ARRAY_LIT) {
+        // when const same size must be initialized, but when not const can be less (but not more) than declared
         if (!validateArrayLiteralInit(arrLit, varType, newSymbol->staticSize, isConst, context)) {
             return 0;
         }
