@@ -403,6 +403,7 @@ static int compileModule(BuildContext *ctx, Module *mod, int optLevel,
     // Write assembly file
     char asmPath[512];
     snprintf(asmPath, sizeof(asmPath), "%s/%s.s", ctx->basePath, mod->name);
+    printf("%s", assembly);
     if (!writeAssemblyToFile(assembly, asmPath)) {
         free(assembly);
         freeIrContext(ir);
