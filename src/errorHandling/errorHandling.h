@@ -218,5 +218,6 @@ int getWarningCount(void);
 int getFatalCount(void);
 void resetErrorCount(void);
 void repError(ErrorCode code, const char *extraContext);
+void setSilentMode(int silent);
 
 #endif

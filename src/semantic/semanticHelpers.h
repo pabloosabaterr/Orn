@@ -32,6 +32,7 @@ int validateScalarInitialization(Symbol newSymbol, ASTNode node,
                                         DataType varType, int isConst, int isMemRef,
                                         TypeCheckContext context);
 void freeErrorContext(ErrorContext * ctx);
+int validateStructInlineInitialization(Symbol sym, ASTNode init, DataType type, int isConst, TypeCheckContext ctx);
 Symbol lookupSymbolOrError(TypeCheckContext context, ASTNode node);
 
 #endif //CINTERPRETER_SEMANTICHELPERS_H

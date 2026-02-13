@@ -673,7 +673,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
     case FUNCTION_CALL: {
         Symbol funcSymbol = lookupSymbol(typeCtx->current, node->start, node->length);
         int paramCount = 0;
-        if(funcSymbol && funcSymbol->type != TYPE_VOID && funcSymbol->returnedVar->type == TYPE_STRUCT){
+        if(funcSymbol && funcSymbol->type != TYPE_VOID && funcSymbol->type == TYPE_STRUCT){
             ++paramCount;
         }
         ASTNode argList = node->children;
@@ -993,9 +993,7 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
 IrContext *generateIr(ASTNode ast, TypeCheckContext typeCtx){
     IrContext *ctx = createIrContext();
     if(!ctx)  return NULL;
-    printf("Starting IR generation\n");
     generateStatementIr(ctx, ast, typeCtx);
-    printf("Finished IR generation\n");
     return ctx;
 }
 

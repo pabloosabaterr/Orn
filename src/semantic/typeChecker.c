@@ -594,6 +594,10 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
             ASTNode targetTypeNode = node->children->brothers;
             return getDataTypeFromNode(targetTypeNode->nodeType);
         case FUNCTION_CALL: {
+            if (!validateFunctionCall(node, context)) {
+                return TYPE_UNKNOWN;
+            }
+
             Symbol funcSymbol = lookupSymbol(context->current, node->start, node->length);
             if (funcSymbol != NULL && funcSymbol->symbolType == SYMBOL_FUNCTION) {
                 return funcSymbol->type;
@@ -1449,7 +1453,6 @@ int validateReturnStatement(ASTNode node, TypeCheckContext context) {
     }
 
     funcSym->returnedVar = lookupSymbol(context->current, node->children->start, node->children->length);
-    printf("return type is %s, expected %s\n", getTypeName(returnType), getTypeName(expectedType));
 
     return 1;
 }

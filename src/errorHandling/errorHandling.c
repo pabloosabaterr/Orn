@@ -20,6 +20,8 @@ static int warningCount = 0;
 /** @internal Global counter for fatal errors */
 static int fatalCount = 0;
 
+static int silentMode = 0; // If set, suppresses error output (used for testing)
+
 void repError(ErrorCode code, const char *extraContext) {
 	reportError(code, NULL, extraContext);
 }
@@ -74,6 +76,10 @@ void reportError(ErrorCode code, ErrorContext *context, const char *extraContext
             levelColor = RED ;
             levelText = "error";
             break;
+    }
+
+    if(silentMode) {
+        return;
     }
 
     const char *RESET_COLOR = RESET ;
@@ -159,3 +165,14 @@ int hasErrors(void) {
 int hasFatalErrors(void) {
 	return (fatalCount > 0);
 }
+
+void resetErrorCount(void) {
+    errorCount = 0;
+    warningCount = 0;
+    fatalCount = 0;
+}
+
+int getErrorCount(void) { return errorCount; }
+int getWarningCount(void) { return warningCount; }
+int getFatalCount(void) { return fatalCount; }
+void setSilentMode(int silent) { silentMode = silent; }

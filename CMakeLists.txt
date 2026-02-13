@@ -1,63 +1,58 @@
 cmake_minimum_required(VERSION 3.10)
 project(Compiler C)
-
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -O3")
 
-# Source files (excluding main.c for library)
 set(LIB_SOURCES
-        src/lexer/lexer.c
-        src/parser/parser.c
-        src/errorHandling/errorHandling.c
-        src/parser/parserHelpers.c
-        src/semantic/typeChecker.c
-        src/semantic/typeChecker.h
-        src/semantic/symbolTable.c
-        src/semantic/symbolTable.h
-        src/semantic/builtIns.c
-        src/semantic/builtIns.h
-        src/semantic/semanticHelpers.c
-        src/semantic/semanticHelpers.h
-        src/errorHandling/errors.c
-        src/IR/ir.c
-        src/IR/ir.h
-        src/IR/irHelpers.c
-        src/IR/irHelpers.h
-        src/IR/optimization.c
-        src/IR/optimization.h
-        src/codeGeneration/codegen.c
-        src/codeGeneration/codegen.h
-        src/codeGeneration/dataPool.h
-        src/codeGeneration/dataPool.c
-        src/codeGeneration/emiter.h
-        src/codeGeneration/emiter.c
-        src/codeGeneration/stringBuffer.h
-        src/codeGeneration/stringBuffer.c
-        src/codeGeneration/variableHandling.c
-        src/codeGeneration/variableHandling.h
-        src/modules/interface.c
-        src/modules/interface.h
-        src/modules/build.c
-        src/modules/build.h
+    src/lexer/lexer.c
+    src/parser/parser.c
+    src/parser/parserHelpers.c
+    src/semantic/typeChecker.c
+    src/semantic/symbolTable.c
+    src/semantic/builtIns.c
+    src/semantic/semanticHelpers.c
+    src/errorHandling/errorHandling.c
+    src/errorHandling/errors.c
+    src/IR/ir.c
+    src/IR/irHelpers.c
+    src/IR/optimization.c
+    src/codeGeneration/codegen.c
+    src/codeGeneration/dataPool.c
+    src/codeGeneration/emiter.c
+    src/codeGeneration/stringBuffer.c
+    src/codeGeneration/variableHandling.c
+    src/modules/interface.c
+    src/modules/build.c
 )
 
-# Create compiler library
 add_library(compiler_lib ${LIB_SOURCES})
-
 target_include_directories(compiler_lib PUBLIC
-        src/lexer
-        src/parser
-        src/errorHandling
-        src/semantic
-        src/IR
+    src/lexer src/parser src/errorHandling src/semantic
+    src/IR src/codeGeneration src/modules
 )
 
-# Main executable
 add_executable(orn src/main.c)
 target_link_libraries(orn compiler_lib)
 
-configure_file(
-    ${CMAKE_SOURCE_DIR}/src/runtime/runtime.s
-    ${CMAKE_BINARY_DIR}/runtime.s
-    COPYONLY
-)
+configure_file(src/runtime/runtime.s runtime.s COPYONLY)
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/unity/src/unity.c" AND 
+   EXISTS "${CMAKE_SOURCE_DIR}/tests/frontEnd/frontend.c")
+    enable_testing()
+    add_library(unity unity/src/unity.c)
+    target_include_directories(unity PUBLIC unity/src)
+    
+    add_executable(test_frontend
+        tests/frontEnd/frontend.c
+        tests/frontEnd/variables/variableDeclaration.c
+        tests/frontEnd/math/arithmetic.c
+        tests/frontEnd/variables/casting.c
+        tests/frontEnd/functions/functions.c
+    )
+    target_link_libraries(test_frontend PRIVATE compiler_lib unity)
+    target_include_directories(test_frontend PRIVATE
+        src unity/src tests/frontEnd
+        tests/frontEnd/variables tests/frontEnd/math tests/frontEnd/functions
+    )
+    add_test(NAME test_frontend COMMAND test_frontend)
+endif()

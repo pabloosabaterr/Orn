@@ -350,7 +350,6 @@ static int compileModule(BuildContext *ctx, Module *mod, int optLevel,
     typeCheckAST(ast->root, source, mod->path, typeCtx);
     // Extract exports for dependents
     mod->interface = extractExportsWithContext(ast->root, mod->name, typeCtx);
-    printf("before ir\n");
     // Generate IR
     IrContext *ir = generateIr(ast->root, typeCtx);
     if (!ir) {
@@ -360,7 +359,6 @@ static int compileModule(BuildContext *ctx, Module *mod, int optLevel,
         free(source);
         return 0;
     }
-    printf("after ir\n");
     
     // Optimize
     if (optLevel > 0) {
@@ -405,7 +403,6 @@ static int compileModule(BuildContext *ctx, Module *mod, int optLevel,
     // Write assembly file
     char asmPath[512];
     snprintf(asmPath, sizeof(asmPath), "%s/%s.s", ctx->basePath, mod->name);
-    printf("%s", assembly);
     if (!writeAssemblyToFile(assembly, asmPath)) {
         free(assembly);
         freeIrContext(ir);
