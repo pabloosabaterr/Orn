@@ -15,3 +15,11 @@ void test_plus_assign(void) {
 void test_minus_assign(void) {
     assertPass("let x: int = 10; x -= 3;");
 }
+
+void test_increment_bool_fails(void) {
+    assertFail("let b: bool = true; b++;");
+}
+
+void test_plus_assign_type_mismatch_fails(void) {
+    assertFail("let x: int = 1; x += \"hello\";");
+}

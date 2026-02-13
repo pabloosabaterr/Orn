@@ -12,12 +12,10 @@ void test_arithmetic_sub_div_mod(void) {
     assertPass("const a: int = 10 - 3; const b: int = 10 / 2; const c: int = 10 % 3;");
 }
 
-
-
-
-
-
-
 void test_string_arithmetic_fails(void) {
     assertFail("const x: int = \"a\" + \"b\";");
+}
+
+void test_array_assign_size_mismatch_fails(void) {
+    assertFail("let a: int[2]; let b: int[3]; a = b;");
 }

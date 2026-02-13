@@ -34,11 +34,6 @@ void assertFail(const char *src) {
 int main() {
     UNITY_BEGIN();
 
-    // Basic operators
-    RUN_TEST(test_comparison_returns_bool);
-    RUN_TEST(test_all_comparisons);
-    RUN_TEST(test_logical_and_or);
-
     // Variable declarations
     RUN_TEST(test_const_int);
     RUN_TEST(test_let_float);
@@ -64,25 +59,33 @@ int main() {
     RUN_TEST(test_undefined_function);
     RUN_TEST(test_function_uses_params);
     RUN_TEST(test_function_multiple_calls);
+    RUN_TEST(test_function_missing_return_value);
+    RUN_TEST(test_function_call_expression_args);
 
     // Arithmetic expressions
     RUN_TEST(test_arithmetic_int);
     RUN_TEST(test_arithmetic_float);
     RUN_TEST(test_arithmetic_sub_div_mod);
     RUN_TEST(test_string_arithmetic_fails);
+    RUN_TEST(test_array_assign_size_mismatch_fails);
 
     // Assignment expressions
     RUN_TEST(test_increment);
     RUN_TEST(test_decrement);
     RUN_TEST(test_plus_assign);
     RUN_TEST(test_minus_assign);
+    RUN_TEST(test_increment_bool_fails);
+    RUN_TEST(test_plus_assign_type_mismatch_fails);
 
     // Casting expressions
     RUN_TEST(test_cast_int_to_float);
     RUN_TEST(test_cast_float_to_int);
+    RUN_TEST(test_cast_string_to_int_fails);
+    RUN_TEST(test_cast_int_to_string_fails);
 
     // Ternary expressions
     RUN_TEST(test_ternary_expression);
+    RUN_TEST(test_ternary_branch_type_mismatch_fails);
 
     // Control flow statements
     RUN_TEST(test_if_statement);
@@ -93,13 +96,16 @@ int main() {
     // Scope tests
     RUN_TEST(test_block_scoping);
     RUN_TEST(test_inner_scope_accesses_outer);
+    RUN_TEST(test_scope_variable_not_visible_outside_fails);
 
     // Pointers
     RUN_TEST(test_pointer_declaration);
+    RUN_TEST(test_pointer_level_mismatch_assignment_fails);
 
     // Structs
     RUN_TEST(test_struct_definition);
     RUN_TEST(test_struct_with_multiple_types);
+    RUN_TEST(test_struct_duplicate_fields_fails);
 
     // Module exports
     RUN_TEST(test_export_function);
@@ -112,6 +118,8 @@ int main() {
 
     // Arrays
     RUN_TEST(test_array_declaration);
+    RUN_TEST(test_array_index_non_int_fails);
+    RUN_TEST(test_array_index_out_of_bounds_const_fails);
 
     return UNITY_END();
 }

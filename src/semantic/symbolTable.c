@@ -37,6 +37,7 @@ Symbol addFunctionSymbol(SymbolTable symbolTable, const char *nameStart, size_t 
 
     Symbol newSymbol = malloc(sizeof(struct Symbol));
     if (newSymbol == NULL) return NULL;
+    memset(newSymbol, 0, sizeof(struct Symbol));
 
     newSymbol->nameStart = nameStart;
     newSymbol->nameLength = nameLength;
@@ -58,20 +59,15 @@ Symbol addFunctionSymbol(SymbolTable symbolTable, const char *nameStart, size_t 
 }
 
 //wrapper
-Symbol addFunctionSymbolFromNode(SymbolTable symbolTable, ASTNode node, DataType returnType,
-                                 FunctionParameter parameters, int paramCount) {
+Symbol addFunctionSymbolFromNode(SymbolTable symbolTable, ASTNode node, DataType returnType, FunctionParameter parameters, int paramCount) {
     if (!node) return NULL;
-    return addFunctionSymbol(symbolTable, node->start, node->length, returnType,
-                           parameters, paramCount, node->line, node->column);
+    return addFunctionSymbol(symbolTable, node->start, node->length, returnType, parameters, paramCount, node->line, node->column);
 }
 
 //wrapper for builtins
-Symbol addFunctionSymbolFromString(SymbolTable symbolTable, const char *name,
-                                   DataType returnType, FunctionParameter parameters,
-                                   int paramCount, int line, int column) {
+Symbol addFunctionSymbolFromString(SymbolTable symbolTable, const char *name, DataType returnType, FunctionParameter parameters, int paramCount, int line, int column) {
     if (!name) return NULL;
-    return addFunctionSymbol(symbolTable, name, strlen(name), returnType,
-                           parameters, paramCount, line, column);
+    return addFunctionSymbol(symbolTable, name, strlen(name), returnType, parameters, paramCount, line, column);
 }
 
 /**
@@ -197,8 +193,7 @@ Symbol lookupSymbol(SymbolTable table, const char *nameStart, size_t nameLength)
  * @param type Data type
  * @return Created Symbol or NULL if symbol already exists or allocation fails
  */
-Symbol addSymbol(SymbolTable table, const char *nameStart, size_t nameLength,
-                 DataType type, int line, int column) {
+Symbol addSymbol(SymbolTable table, const char *nameStart, size_t nameLength, DataType type, int line, int column) {
     if (table == NULL || nameStart == NULL) return NULL;
 
     Symbol existing = lookupSymbolCurrentOnly(table, nameStart, nameLength);
@@ -206,6 +201,7 @@ Symbol addSymbol(SymbolTable table, const char *nameStart, size_t nameLength,
 
     Symbol newSymbol = malloc(sizeof(struct Symbol));
     if (newSymbol == NULL) return NULL;
+    memset(newSymbol, 0, sizeof(struct Symbol));
 
     newSymbol->nameStart = nameStart;
     newSymbol->nameLength = nameLength;
@@ -217,8 +213,10 @@ Symbol addSymbol(SymbolTable table, const char *nameStart, size_t nameLength,
     newSymbol->isInitialized = 0;
     newSymbol->parameters = NULL;
     newSymbol->paramCount = 0;
+    newSymbol->baseType = type;
     newSymbol->next = table->symbols;
     table->symbols = newSymbol;
+    table->symbolCount++;
 
     return newSymbol;
 }

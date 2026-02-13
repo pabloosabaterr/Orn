@@ -13,3 +13,10 @@ void test_inner_scope_accesses_outer(void) {
         "if (x > 0) { let y: int = x * 2; }"
     );
 }
+
+void test_scope_variable_not_visible_outside_fails(void) {
+    assertFail(
+        "if (true) { let y: int = 1; }\n"
+        "let z: int = y;"
+    );
+}

@@ -55,6 +55,7 @@ FunctionParameter extractParameters(ASTNode paramListNode);
 DataType getReturnTypeFromNode(ASTNode returnTypeNode, int *outPointerLevel);
 int validateBuiltinFunctionCall(ASTNode node, TypeCheckContext context);
 int validateUserDefinedFunctionCall(ASTNode node, TypeCheckContext context);
+int validateCastExpression(ASTNode node, TypeCheckContext context);
 
 void enqueueBlockScope(TypeCheckContext context, SymbolTable scope);
 SymbolTable dequeueBlockScope(TypeCheckContext context);

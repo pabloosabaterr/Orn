@@ -591,6 +591,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
         }
         case CAST_EXPRESSION:
             if(!node->children || !node->children->brothers) return TYPE_UNKNOWN;
+            if(!validateCastExpression(node, context)) return TYPE_UNKNOWN;
             ASTNode targetTypeNode = node->children->brothers;
             return getDataTypeFromNode(targetTypeNode->nodeType);
         case FUNCTION_CALL: {
@@ -1837,6 +1838,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
             break;
         }
         case CAST_EXPRESSION:
+            printf("Validating cast expression at line %d, column %d\n", node->line, node->column);
             success = validateCastExpression(node, context);
             break;
         case UNARY_MINUS_OP:

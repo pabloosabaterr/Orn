@@ -55,3 +55,14 @@ void test_function_multiple_calls(void) {
         "const y: int = add(x, 3);"
     );
 }
+
+void test_function_missing_return_value(void) {
+    assertFail("fn needsValue() -> int { return; }");
+}
+
+void test_function_call_expression_args(void) {
+    assertPass(
+        "fn add(a: int, b: int) -> int { return a + b; }\n"
+        "const result: int = add(1 + 2, 3 * 4);"
+    );
+}
