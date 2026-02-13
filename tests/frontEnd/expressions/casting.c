@@ -1,4 +1,4 @@
-#include "variable.h"
+#include "../frontend.h"
 
 void test_cast_int_to_float(void) {
     assertPass("let x: int = 42; let y: float = x as float;");

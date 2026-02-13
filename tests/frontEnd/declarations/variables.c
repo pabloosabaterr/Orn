@@ -1,5 +1,4 @@
-#include "variable.h"
-#include "unity.h"
+#include "../frontend.h"
 
 void test_const_int(void) {
     assertPass("const x: int = 42;");

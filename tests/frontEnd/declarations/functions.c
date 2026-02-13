@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "../frontend.h"
 
 void test_function_basic(void) {
     assertPass("fn add(a: int, b: int) -> int { return a + b; }");

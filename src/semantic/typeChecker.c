@@ -962,7 +962,7 @@ int validateVariableDeclaration(ASTNode node, TypeCheckContext context, int isCo
     }
     
     ASTNode initNode = isArr ? node->children->brothers->brothers : node->children->brothers;
-    if (node->children && node->children->brothers) {
+    if (initNode) {
         int isMemRef = (initNode->children && initNode->children->nodeType == MEMADDRS);
         
         // Validate address-of operator if used

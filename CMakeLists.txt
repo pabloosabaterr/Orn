@@ -44,15 +44,26 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/unity/src/unity.c" AND
     
     add_executable(test_frontend
         tests/frontEnd/frontend.c
-        tests/frontEnd/variables/variableDeclaration.c
-        tests/frontEnd/math/arithmetic.c
-        tests/frontEnd/variables/casting.c
-        tests/frontEnd/functions/functions.c
+        tests/frontEnd/basic/operators.c
+        tests/frontEnd/declarations/variables.c
+        tests/frontEnd/declarations/functions.c
+        tests/frontEnd/types/structs.c
+        tests/frontEnd/types/pointers.c
+        tests/frontEnd/types/arrays.c
+        tests/frontEnd/expressions/arithmetic.c
+        tests/frontEnd/expressions/casting.c
+        tests/frontEnd/expressions/ternary.c
+        tests/frontEnd/expressions/assignment.c
+        tests/frontEnd/statements/controlFlow.c
+        tests/frontEnd/statements/scopes.c
+        tests/frontEnd/modules/exports.c
+        tests/frontEnd/integration/programs.c
     )
     target_link_libraries(test_frontend PRIVATE compiler_lib unity)
     target_include_directories(test_frontend PRIVATE
-        src unity/src tests/frontEnd
-        tests/frontEnd/variables tests/frontEnd/math tests/frontEnd/functions
+        src 
+        unity/src 
+        tests/frontEnd
     )
     add_test(NAME test_frontend COMMAND test_frontend)
 endif()
