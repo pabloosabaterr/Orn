@@ -193,24 +193,20 @@ int deadCodeElimination(IrContext *ctx) {
 void optimizeIR(IrContext *ctx, int optLevel) {
     if (optLevel == 0) return;
     
-    int maxPasses;
-    switch (optLevel) {
-        case 1: maxPasses = 3; break;
-        case 2: maxPasses = 5; break;
-        case 3: maxPasses = 10; break;
-        default: maxPasses = 0; break;
-    }
+    // int maxPasses;
+    // switch (optLevel) {
+    //     case 1: maxPasses = 3; break;
+    //     case 2: maxPasses = 5; break;
+    //     case 3: maxPasses = 10; break;
+    //     default: maxPasses = 0; break;
+    // }
     
-    for (int pass = 0; pass < maxPasses; pass++) {
-        int changed = 0;
-        
+    int changed = 0;
+    while (1) {    
         changed |= constantFolding(ctx);
         changed |= copyProp(ctx);
         changed |= constantFolding(ctx);
         changed |= deadCodeElimination(ctx);
-
-        if (!changed) {
-            break;
-        }
+        if (!changed) break;
     }
 }
