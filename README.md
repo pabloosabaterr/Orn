@@ -9,7 +9,8 @@
   <a href="#why">Why?</a> •
   <a href="#performance-architecture">Performance</a> •
   <a href="#getting-started">Getting Started</a> •
-  <a href="#usage">Usage</a>
+  <a href="#usage">Usage</a> •
+  <a href="#documentation">More docs</a>
 </p>
 
 ---
@@ -117,6 +118,10 @@ cmake --build .
 This will show all available options and usage examples.
 
 ---
+
+### Documentation
+
+- [Testing guide](docs/testing.md)
 
 ## Usage
 

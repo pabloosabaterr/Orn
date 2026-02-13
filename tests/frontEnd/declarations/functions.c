@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "../frontend.h"
 
 void test_function_basic(void) {
     assertPass("fn add(a: int, b: int) -> int { return a + b; }");
@@ -53,5 +53,16 @@ void test_function_multiple_calls(void) {
         "fn add(a: int, b: int) -> int { return a + b; }\n"
         "const x: int = add(1, 2);\n"
         "const y: int = add(x, 3);"
+    );
+}
+
+void test_function_missing_return_value(void) {
+    assertFail("fn needsValue() -> int { return; }");
+}
+
+void test_function_call_expression_args(void) {
+    assertPass(
+        "fn add(a: int, b: int) -> int { return a + b; }\n"
+        "const result: int = add(1 + 2, 3 * 4);"
     );
 }
