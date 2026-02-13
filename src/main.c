@@ -15,6 +15,7 @@ void printUsage(const char* programName) {
     printf("    -O1          Basic optimization (3 passes)\n");
     printf("    -O2          Moderate optimization (5 passes)\n");
     printf("    -O3          Aggressive optimization (10 passes)\n");
+    printf("    -Ox          Extremely aggressive optimizations (30 passes)\n");
     printf("    --help       Show this help message\n\n");
     printf("EXAMPLES:\n");
     printf("    %s program.orn                   Compile to ./program\n", programName);
@@ -59,9 +60,11 @@ int main(int argc, char* argv[]) {
         }
         else if (strncmp(argv[i], "-O", 2) == 0) {
             char level = argv[i][2];
-            if (level >= '0' && level <= '3') {
+            if (level == 'x') // -Ox
+                optLvl = 4;
+            else if (level >= '0' && level <= '3')
                 optLvl = level - '0';
-            } else {
+            else {
                 fprintf(stderr, "Invalid optimization level: %s (use -O0 to -O3)\n", argv[i]);
                 return 1;
             }

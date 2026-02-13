@@ -195,22 +195,20 @@ void optimizeIR(IrContext *ctx, int optLevel) {
     
     int maxPasses;
     switch (optLevel) {
-        case 1: maxPasses = 3; break;
-        case 2: maxPasses = 5; break;
+        case 1: maxPasses = 3;  break;
+        case 2: maxPasses = 5;  break;
         case 3: maxPasses = 10; break;
+        case 4: maxPasses = 30; break;
         default: maxPasses = 0; break;
     }
     
-    for (int pass = 0; pass < maxPasses; pass++) {
-        int changed = 0;
-        
+    while (maxPasses > 0) {    
+        int changed = 0; // the changed item must be kept inside to ensure that the checks occur correctly
         changed |= constantFolding(ctx);
         changed |= copyProp(ctx);
         changed |= constantFolding(ctx);
         changed |= deadCodeElimination(ctx);
-
-        if (!changed) {
-            break;
-        }
+        if (!changed) break;
+        maxPasses--;
     }
 }
