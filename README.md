@@ -39,30 +39,54 @@ Many low-level languages have steep learning curves that intimidate developers c
 
 ## Performance Architecture
 
-Orn uses a **zero-copy reference design** inspired by production compilers like Clang and Rust:
+Orn now builds projects module by module, resolving imports and generating optimized code:
+
 ```
-Source Buffer (one malloc)
-    ↓
-Tokens (ptr+len references)
-    ↓
-AST (ptr+len references)
-    ↓
-Semantic Analysis (ptr+len references)
-    ↓
-IR (Three-Address Code)
-    ↓
-IR Optimization (multiple passes)
-    ↓
-Assembly (new strings)
+Entry Module
+    │
+    ▼
+Read File
+    │
+    ▼
+Module Discovery & Imports ──► Recursive for dependencies
+    │
+    ▼
+Lexical Analysis (lex)
+    │
+    ▼
+Parsing (ASTGenerator)
+    │
+    ▼
+Type Checking & Symbol Table
+    │
+    ▼
+Export Extraction (module interface)
+    │
+    ▼
+IR Generation
+    │
+    ▼
+IR Optimization (optional)
+    │
+    ▼
+Assembly Generation (.s)
+    │
+    ▼
+Object File Compilation (.o via gcc)
+    │
+    ▼
+Linking (gcc -no-pie -nostdlib)
+    │
+    ▼
+Executable
 ```
 
-**Benefits:**
-- Single source allocation, thousands fewer mallocs
-- No duplicate string storage throughout pipeline
-- Better memory locality and faster compilation
-- References become copies only in final assembly output
+**Notes:**
 
-Traditional compilers duplicate every identifier dozens of times. Orn references the original buffer until code generation.
+* Modules are **topologically sorted** so dependencies compile first
+* **Interfaces** allow modules to know what imports provide
+* IR is **optimized per module** before generating assembly
+* Final executable is linked from all compiled modules
 
 ---
 
@@ -76,7 +100,6 @@ Traditional compilers duplicate every identifier dozens of times. Orn references
 
 ### Build
 
-### Installation
 ```bash
 git clone https://github.com/pabloosabaterr/Orn.git
 cd Orn
@@ -85,12 +108,8 @@ cmake ..
 cmake --build .
 ```
 
-You can now run Orn on your own programs:
-```bash
-./orn program.orn
-```
+### Run
 
-Or, for verbose compilation output:
 ```bash
 ./orn --help
 ```
@@ -103,24 +122,12 @@ This will show all available options and usage examples.
 
 ### Example Program
 ```typescript
-const x: int = 42;
-let rate: float = 3.14;
-const msg: string = "Hello, World!";
-const b: bool = true; // bools and ints cannot mix
+fn fibonacci(n: int) -> int {
+    if (n <= 1) {
+        return n;
+    };
 
-if x > 0 {
-   print(msg);
-}
-
-let i: int = 0;
-while i <= 10 {
-    print(i);
-    i++;
-}
-
-// simple add function
-fn add(a: int, b: int) -> int {
-    return a + b;
+    return fibonacci(n-1) + fibonacci(n-2);
 }
 
 const result: int = fibonacci(10);
@@ -130,8 +137,7 @@ print(result);
 ### Error Example
 
 Orn provides actionable error messages:
-
-```ts
+```
 error [E2005]: cannot assign to constant (x)
   --> source.orn:2:1
    |
