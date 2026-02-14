@@ -248,6 +248,8 @@ DataType getDataTypeFromNode(NodeTypes nodeType) {
         // now works bcs structs are the only user custom types
         case REF_CUSTOM:
             return TYPE_STRUCT;
+        case REF_VOID:
+            return TYPE_VOID;
         default:
             return TYPE_UNKNOWN;
     }

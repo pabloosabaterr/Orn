@@ -15,3 +15,15 @@ void test_cast_string_to_int_fails(void) {
 void test_cast_int_to_string_fails(void) {
     assertFail("let s: int = 42; let x: string = s as string;");
 }
+
+void test_invalid_cast_target_fails(void) {
+    assertFail("const x: int = 1 as nope;");
+}
+
+void test_forbidden_cast_fails(void) {
+    assertFail("const x: bool = \"true\" as bool;");
+}
+
+void test_cast_precision_loss_fails(void) {
+    assertWarning("const x: int = 1.9f as int;");
+}

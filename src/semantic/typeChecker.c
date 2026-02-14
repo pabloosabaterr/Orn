@@ -610,11 +610,20 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
             return validateMemberAccess(node, context);
         case TERNARY_CONDITIONAL: {
             if (!node->children || !node->children->brothers) return TYPE_UNKNOWN;
+            
+            if(getExpressionType(node->children, context) != TYPE_BOOL) {
+                REPORT_ERROR(ERROR_INVALID_CONDITION_TYPE, node, context, "Ternary condition must be boolean");
+                return TYPE_UNKNOWN;
+            }
 
             ASTNode trueBranchWrap = node->children->brothers;
             ASTNode falseBranchWrap = trueBranchWrap ? trueBranchWrap->brothers : NULL;
 
             if (!trueBranchWrap || !falseBranchWrap) return TYPE_UNKNOWN;
+            if(trueBranchWrap->nodeType != TERNARY_IF_EXPR || falseBranchWrap->nodeType != TERNARY_ELSE_EXPR) {
+                repError(ERROR_INTERNAL_PARSER_ERROR, "Invalid ternary expression structure");
+                return TYPE_UNKNOWN;
+            }
 
             ASTNode trueExpr = trueBranchWrap->children;
             ASTNode falseExpr = falseBranchWrap->children;
@@ -1029,13 +1038,11 @@ int validateAssignment(ASTNode node, TypeCheckContext context) {
                     lookupSymbol(context->current, arrayNode->start, arrayNode->length);
                 // Check if array itself is const or has const memory reference
                 if (arraySym && arraySym->isConst) {
-                    REPORT_ERROR(ERROR_CONSTANT_REASSIGNMENT, node, context,
-                                 "Cannot modify through const array element");
+                    REPORT_ERROR(ERROR_CONSTANT_REASSIGNMENT, node, context, "Cannot modify through const array element");
                     return 0;
                 }
                 if (arraySym && arraySym->hasConstMemRef) {
-                    REPORT_ERROR(ERROR_CONSTANT_REASSIGNMENT, node, context,
-                                 "Cannot modify through pointer to const");
+                    REPORT_ERROR(ERROR_CONSTANT_REASSIGNMENT, node, context, "Cannot modify through pointer to const");
                     return 0;
                 }
             }
@@ -1060,6 +1067,11 @@ int validateAssignment(ASTNode node, TypeCheckContext context) {
     if (left->nodeType == VARIABLE) {
         Symbol sym = lookupSymbolOrError(context, left);
         if (!sym) return 0;
+
+        if(sym->symbolType == SYMBOL_FUNCTION){
+            REPORT_ERROR(ERROR_INVALID_ASSIGNMENT_TARGET, node, context, "Cannot assign to function name");
+            return 0;
+        }
         
         if (checkConstViolation(sym, node, context, isPointerDeref)) {
             return 0;
@@ -1232,6 +1244,16 @@ FunctionParameter extractParameters(ASTNode paramListNode) {
             ASTNode baseTypeNode = getBaseTypeFromPointerChain(
                 paramNode->children->children, &pointerLevel);
             DataType paramType = getDataTypeFromNode(baseTypeNode->nodeType);
+
+            if(paramType == TYPE_STRUCT) {
+                Symbol structSym = lookupSymbol(NULL, baseTypeNode->start, baseTypeNode->length);
+                if(structSym && structSym->symbolType == SYMBOL_TYPE) {
+                    paramType = TYPE_STRUCT;
+                } else {
+                    repError(ERROR_UNDEFINED_STRUCT, "Unknown struct type in parameter");
+                    return NULL;
+                }
+            }
             
             FunctionParameter param = createParameter(paramNode->start, paramNode->length, paramType);
             if (param == NULL) {
@@ -1269,6 +1291,20 @@ DataType getReturnTypeFromNode(ASTNode returnTypeNode, int *outPointerLevel) {
 
     if (outPointerLevel) *outPointerLevel = 0;
     return TYPE_VOID;
+}
+
+int containsReturnStatement(ASTNode node) {
+    if (node == NULL) return 0;
+    if (node->nodeType == RETURN_STATEMENT) return 1;
+
+    ASTNode child = node->children;
+    while (child != NULL) {
+        if (containsReturnStatement(child)) {
+            return 1;
+        }
+        child = child->brothers;
+    }
+    return 0;
 }
 
 int validateFunctionDef(ASTNode node, TypeCheckContext context) {
@@ -1365,7 +1401,13 @@ int validateFunctionDef(ASTNode node, TypeCheckContext context) {
 
     int success = 1;
     if (bodyNode != NULL) {
-        success = typeCheckNode(bodyNode, context);
+        if(!containsReturnStatement(bodyNode) && returnType != TYPE_VOID) {
+            REPORT_ERROR(ERROR_MISSING_RETURN_VALUE, node, context, "Non-void function missing return statement");
+            success = 0;
+            
+        }else  {
+            success = typeCheckNode(bodyNode, context);
+        }
     }
 
     context->current = oldScope;

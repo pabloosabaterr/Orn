@@ -23,3 +23,7 @@ void test_increment_bool_fails(void) {
 void test_plus_assign_type_mismatch_fails(void) {
     assertFail("let x: int = 1; x += \"hello\";");
 }
+
+void test_invalid_assignment_target_fails(void) {
+    assertFail("1 = 2;");
+}

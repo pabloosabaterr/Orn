@@ -729,6 +729,30 @@ const ErrorInfo errorDatabase[] = {
         "use continue only within while or for loops"
     },
     {
+        ERROR_UNDEFINED_TYPE,
+        ERROR,
+        "undefined type",
+        "the specified type does not exist in the current scope",
+        "unknown type name",
+        "define the type before using it or check for typos"
+    },
+    {
+        ERROR_INVALID_CONDITION_TYPE,
+        ERROR,
+        "invalid condition type",
+        "the condition expression must evaluate to a boolean type",
+        "non-boolean expression in a conditional statement",
+        "ensure the condition evaluates to a boolean (true/false) value"
+    },
+    {
+        ERROR_UNDEFINED_STRUCT,
+        ERROR,
+        "undefined struct",
+        "the specified struct type does not exist in the current scope",
+        "unknown struct name",
+        "define the struct before using it or check for typos"
+    },
+    {
         ERROR_INVALID_LOOP_CONDITION,
         ERROR,
         "invalid loop condition",

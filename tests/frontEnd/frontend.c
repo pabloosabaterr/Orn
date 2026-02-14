@@ -31,6 +31,14 @@ void assertFail(const char *src) {
     if (ctx) freeTypeCheckContext(ctx);
 }
 
+void assertWarning(const char *src){
+    resetErrorCount();
+    TypeCheckContext ctx = compile(src);
+    int hasWarning = (ctx != NULL) && (getWarningCount() > 0);
+    TEST_ASSERT_TRUE_MESSAGE(hasWarning, "Expected compilation to emit a warning");
+    if (ctx) freeTypeCheckContext(ctx);
+}
+
 int main() {
     UNITY_BEGIN();
 
@@ -47,6 +55,25 @@ int main() {
     RUN_TEST(test_undefined_variable);
     RUN_TEST(test_duplicate_variable);
     RUN_TEST(test_let_reassignment);
+    RUN_TEST(test_type_mismatch_float_to_string_fails);
+    RUN_TEST(test_type_mismatch_string_to_float_fails);
+    RUN_TEST(test_type_mismatch_string_to_bool_fails);
+    RUN_TEST(test_type_mismatch_float_to_bool_fails);
+    RUN_TEST(test_type_mismatch_int_to_bool_fails);
+    RUN_TEST(test_type_mismatch_bool_to_string_fails);
+    RUN_TEST(test_type_mismatch_bool_to_float_fails);
+    RUN_TEST(test_type_mismatch_double_to_int_fails);
+    RUN_TEST(test_type_mismatch_double_to_float_fails);
+    RUN_TEST(test_type_mismatch_string_to_double_fails);
+    RUN_TEST(test_type_mismatch_bool_to_double_fails);
+    RUN_TEST(test_type_mismatch_double_to_bool_fails);
+    RUN_TEST(test_type_mismatch_double_to_string_fails);
+    RUN_TEST(test_variable_not_initialized_fails);
+    RUN_TEST(test_invalid_variable_name_fails);
+    RUN_TEST(test_undefined_symbol_fails);
+    RUN_TEST(test_symbol_not_variable_fails);
+    RUN_TEST(test_expected_type_fails);
+    RUN_TEST(test_expected_identifier_fails);
 
     // Functions
     RUN_TEST(test_function_basic);
@@ -61,6 +88,16 @@ int main() {
     RUN_TEST(test_function_multiple_calls);
     RUN_TEST(test_function_missing_return_value);
     RUN_TEST(test_function_call_expression_args);
+    RUN_TEST(test_expected_arrow_fails);
+    RUN_TEST(test_expected_return_fails);
+    RUN_TEST(test_expected_fn_fails);
+    RUN_TEST(test_expected_function_name_fails);
+    RUN_TEST(test_expected_parameter_name_fails);
+    RUN_TEST(test_expected_comma_or_paren_fails);
+    RUN_TEST(test_function_redefined_fails);
+    RUN_TEST(test_invalid_function_name_fails);
+    RUN_TEST(test_invalid_parameter_type_fails);
+    RUN_TEST(test_calling_non_function_fails);
 
     // Arithmetic expressions
     RUN_TEST(test_arithmetic_int);
@@ -76,16 +113,32 @@ int main() {
     RUN_TEST(test_minus_assign);
     RUN_TEST(test_increment_bool_fails);
     RUN_TEST(test_plus_assign_type_mismatch_fails);
+    RUN_TEST(test_incompatible_binary_operands_fails);
+    RUN_TEST(test_invalid_operation_for_type_fails);
+    RUN_TEST(test_incompatible_operand_types_fails);
+    RUN_TEST(test_invalid_unary_operand_fails);
+    RUN_TEST(test_expression_type_unknown_lhs_fails);
+    RUN_TEST(test_expression_type_unknown_rhs_fails);
+    RUN_TEST(test_void_in_expression_fails);
+    RUN_TEST(test_invalid_assignment_target_fails);
 
     // Casting expressions
     RUN_TEST(test_cast_int_to_float);
     RUN_TEST(test_cast_float_to_int);
     RUN_TEST(test_cast_string_to_int_fails);
     RUN_TEST(test_cast_int_to_string_fails);
+    RUN_TEST(test_invalid_cast_target_fails);
+    RUN_TEST(test_forbidden_cast_fails);
+    RUN_TEST(test_cast_precision_loss_fails);
 
     // Ternary expressions
     RUN_TEST(test_ternary_expression);
     RUN_TEST(test_ternary_branch_type_mismatch_fails);
+    RUN_TEST(test_ternary_missing_true_branch_fails);
+    RUN_TEST(test_ternary_missing_false_branch_fails);
+    RUN_TEST(test_ternary_invalid_condition_fails);
+    RUN_TEST(test_expected_question_mark_fails);
+    RUN_TEST(test_expected_colon_fails);
 
     // Control flow statements
     RUN_TEST(test_if_statement);

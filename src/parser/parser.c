@@ -304,6 +304,7 @@ ASTNode parseExpression(TokenList *list,size_t * pos, Precedence minPrec) {
 
 		if (currentToken->type == TK_QUESTION && PREC_TERNARY >= minPrec) {
 			ASTNode conditionalNode = parseTernary(list, pos);
+			if(!conditionalNode) return NULL;
 			left->brothers = conditionalNode->children; // condition->brothers = trueBranchWrap, check ParseTernary comment if forgot why this
 			conditionalNode->children = left;
 			left = conditionalNode;
@@ -1086,7 +1087,7 @@ ASTNode parseDeclaration(TokenList* list, size_t* pos) {
 		
 		ASTNode initExpr, valueWrap;
 		CREATE_NODE_OR_FAIL(valueWrap, NULL, VALUE, list, pos);
-		PARSE_OR_CLEANUP(initExpr, parseExpression(list, pos, PREC_NONE), mutWrapNode, varDefNode);
+		PARSE_OR_FAIL(initExpr, parseExpression(list, pos, PREC_NONE));
 		valueWrap->children = initExpr;
 		
 		// Attach value to appropriate node

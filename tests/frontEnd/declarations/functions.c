@@ -66,3 +66,47 @@ void test_function_call_expression_args(void) {
         "const result: int = add(1 + 2, 3 * 4);"
     );
 }
+
+void test_expected_arrow_fails(void) {
+    assertFail("fn f() int { return 1; }");
+}
+
+void test_expected_return_fails(void) {
+    assertFail("fn f() -> int { 1; }");
+}
+
+void test_expected_fn_fails(void) {
+    assertFail("function f() -> int { return 1; }");
+}
+
+void test_expected_function_name_fails(void) {
+    assertFail("fn (a: int) -> int { return a; }");
+}
+
+void test_expected_parameter_name_fails(void) {
+    assertFail("fn f(: int) -> int { return 1; }");
+}
+
+void test_expected_comma_or_paren_fails(void) {
+    assertFail("fn f(a: int b: int) -> int { return a; }");
+}
+
+void test_function_redefined_fails(void) {
+    assertFail("fn f() -> int { return 1; } fn f() -> int { return 2; }");
+}
+
+void test_invalid_function_name_fails(void) {
+    assertFail("fn 1f() -> int { return 1; }");
+}
+
+void test_duplicate_parameter_name_fails(void) {
+    assertFail("fn f(a: int, a: int) -> int { return a; }");
+}
+
+void test_invalid_parameter_type_fails(void) {
+    assertFail("fn f(a: nope) -> int { return 1; }");
+}
+
+void test_calling_non_function_fails(void) {
+    assertFail("let x: int = 1; const y: int = x();");
+}
