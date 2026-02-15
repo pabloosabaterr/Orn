@@ -5,7 +5,13 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -O3")
 
 set(LIB_SOURCES
     src/lexer/lexer.c
-    src/parser/parser.c
+    src/parser/parserCore.c
+    src/parser/parserExpression.c
+    src/parser/parserStatement.c
+    src/parser/parserDeclaration.c
+    src/parser/parserFunction.c
+    src/parser/parserType.c
+    src/parser/parserAst.c
     src/parser/parserHelpers.c
     src/semantic/typeChecker.c
     src/semantic/symbolTable.c
