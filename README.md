@@ -173,6 +173,7 @@ We welcome contributors and feedback!
 * Visit the [GitHub repository](https://github.com/pabloosabaterr/Orn)
 * Report issues on the [issue tracker](https://github.com/pabloosabaterr/Orn/issues)
 * Join our [Discord](https://discord.gg/E8qqVC9jcf)
+* If you want to contribute please read [Contribution guidelines](docs/CONTRIBUTING.md)
 
 ---
 
