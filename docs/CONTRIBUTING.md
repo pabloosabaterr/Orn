@@ -56,7 +56,7 @@ git clone --recurse-submodules https://github.com/pabloosabaterr/Orn.git
 cd Orn
 mkdir build && cd build
 cmake ..
-cmake --build .
+make
 ```
 
 The `--recurse-submodules` flag pulls in the [Unity](https://github.com/ThrowTheSwitch/Unity) test framework. Verify everything works:
@@ -77,8 +77,8 @@ These are invaluable when debugging a new feature through the pipeline.
 
 ## Style Guide
 
-- Follow consistent indentation (4 spaces, no tabs)
-- Use `camelCase` for functions/variables, `PascalCase` for types/structs, `UPPER_SNAKE_CASE` for constants
+- Follow consistent indentation (one tab)
+- Use `camelCase` for functions/variables, `PascalCase` for types/structs, `UPPER_SNAKE_CASE` for constants `lower_snake_case` for tests
 - Write clear and concise comments where intent isn't obvious
 - Prefer explicit error handling — follow Orn's structured error format (`error [EXXXX]` with context, notes, and suggestions)
 - Free what you allocate — run Valgrind if you're touching allocation logic
@@ -86,7 +86,7 @@ These are invaluable when debugging a new feature through the pipeline.
 
 ## Testing
 
-Tests use the [Unity](https://github.com/ThrowTheSwitch/Unity) framework and live under `tests/frontEnd/`, organized by feature (variables, functions, arrays, pointers, structs, control flow, etc.). Before submitting a pull request:
+Tests use the [Unity](https://github.com/ThrowTheSwitch/Unity) framework and live under `tests/frontend/`, organized by feature (variables, functions, arrays, pointers, structs, control flow, etc.). Before submitting a pull request:
 
 - Write tests for both success and failure cases
 - Name tests descriptively: `test_<feature>_<scenario>` and `test_<feature>_<scenario>_fails`
