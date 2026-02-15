@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 ASTNode parseCommaSeparatedLists(TokenList* list, size_t* pos, NodeTypes listType, ASTNode (*parseElement)(TokenList*, size_t*)){
-    EXPECT_TOKEN(list, pos, TK_LPAREN, ERROR_EXPECTED_OPENING_PAREN,  "Expected '('");
+    EXPECT_AND_ADVANCE(list, pos, TK_LPAREN, ERROR_EXPECTED_OPENING_PAREN,  "Expected '('");
 
     ASTNode listNode;
     CREATE_NODE_OR_FAIL(listNode, NULL, listType, list, pos);
@@ -84,8 +84,6 @@ ASTNode parseReturnType(TokenList* list, size_t* pos){
  */
 
 ASTNode parseFunctionCall(TokenList* list, size_t* pos, Token* token){
-    EXPECT_AND_ADVANCE(list, pos, TK_LPAREN, ERROR_EXPECTED_OPENING_PAREN, "Expected '(' on function call");
-
     ASTNode callNode, argList;
     CREATE_NODE_OR_FAIL(callNode, token, FUNCTION_CALL, list, pos);
 

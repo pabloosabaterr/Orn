@@ -11,7 +11,7 @@ set(LIB_SOURCES
     src/parser/parserDeclaration.c
     src/parser/parserFunction.c
     src/parser/parserType.c
-    src/parser/parserAst.c
+    src/parser/parserAST.c
     src/parser/parserHelpers.c
     src/semantic/typeChecker.c
     src/semantic/symbolTable.c

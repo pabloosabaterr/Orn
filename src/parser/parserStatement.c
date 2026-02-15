@@ -22,6 +22,11 @@ ASTNode parseStatement(TokenList* list, size_t* pos){
 
     Token* currentToken = &list->tokens[*pos];
 
+    if(currentToken->type == TK_EOF){
+        ADVANCE_TOKEN(list, pos);
+        return NULL;
+    }
+
     /* skip semicolons */
     if(currentToken->type == TK_SEMI){
         ADVANCE_TOKEN(list, pos);

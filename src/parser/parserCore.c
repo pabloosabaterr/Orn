@@ -74,12 +74,13 @@ ASTContext* ASTGenerator(TokenList* tokenList){
     size_t lastPos = (size_t)-1;
 
     while(pos < tokenList->count){
+        if(tokenList->tokens[pos].type == TK_EOF) break;
         if(pos == lastPos){
             reportError(ERROR_PARSER_STUCK, createErrorContextFromParser(tokenList, &pos), "Parser is stuck at token");
             pos++;
             continue;
         }
-
+        lastPos = pos;
         ASTNode currentStatement = parseStatement(tokenList, &pos);
         if(currentStatement){
             if(!programNode->children){
