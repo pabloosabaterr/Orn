@@ -1,8 +1,7 @@
 #include "./ir.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "../semantic/symbolTable.h"
-#include "../semantic/typeChecker.h"
+#include "../semantic/semantic.h"
 #include "./irHelpers.h"
 
 IrContext *createIrContext(){

@@ -1,7 +1,7 @@
 #ifndef FRONTEND_H
 #define FRONTEND_H
 
-#include "typeChecker.h"
+#include "semantic.h"
 
 // Setup and teardown
 void setUp(void);

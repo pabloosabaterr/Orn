@@ -1,13 +1,4 @@
-//
-// Created by pablo on 13/09/2025.
-//
-
-#include "builtIns.h"
-
-#include "typeChecker.h"
-
-#include <stdlib.h>
-#include <string.h>
+#include "semanticInternal.h"
 
 static BuiltInFunction builtInFunctions[] = {
     {
@@ -55,8 +46,9 @@ static BuiltInFunction builtInFunctions[] = {
 static int builtInFnCount = sizeof(builtInFunctions) / sizeof(BuiltInFunction);
 static int builtInsInit = 0;
 
-static void initBuiltInsParams() {
+static void initBuiltInsParams(void) {
     if (builtInsInit) return;
+
     builtInFunctions[0].paramTypes = malloc(sizeof(DataType));
     builtInFunctions[0].paramTypes[0] = TYPE_INT;
     builtInFunctions[0].paramNames = malloc(sizeof(char *));
@@ -108,6 +100,8 @@ static FunctionParameter createParameterList(char **names, DataType *types, int 
 
     return first;
 }
+
+/* Public */
 
 void initBuiltIns(SymbolTable globTable) {
     if (globTable == NULL) return;

@@ -13,10 +13,14 @@ set(LIB_SOURCES
     src/parser/parserType.c
     src/parser/parserAST.c
     src/parser/parserHelpers.c
-    src/semantic/typeChecker.c
-    src/semantic/symbolTable.c
-    src/semantic/builtIns.c
-    src/semantic/semanticHelpers.c
+    src/semantic/semanticCore.c
+    src/semantic/semanticTable.c
+    src/semantic/semanticSymbols.c
+    src/semantic/semanticScope.c
+    src/semantic/semanticTypes.c
+    src/semantic/semanticCheck.c
+    src/semantic/semanticBuiltins.c
+    src/semantic/semanticUtils.c
     src/errorHandling/errorHandling.c
     src/errorHandling/errors.c
     src/IR/ir.c
