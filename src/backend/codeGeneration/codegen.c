@@ -1,5 +1,5 @@
-#include "./codegen.h"
-#include "./emiter.h"
+#include "codegen.h"
+#include "emiter.h"
 
 CodeGenContext *createCodeGenContext(void) {
     CodeGenContext *ctx = calloc(1, sizeof(CodeGenContext));

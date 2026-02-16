@@ -2,50 +2,46 @@ cmake_minimum_required(VERSION 3.10)
 project(Compiler C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -O3")
-
 set(LIB_SOURCES
-    src/lexer/lexer.c
-    src/parser/parserCore.c
-    src/parser/parserExpression.c
-    src/parser/parserStatement.c
-    src/parser/parserDeclaration.c
-    src/parser/parserFunction.c
-    src/parser/parserType.c
-    src/parser/parserAST.c
-    src/parser/parserHelpers.c
-    src/semantic/semanticCore.c
-    src/semantic/semanticTable.c
-    src/semantic/semanticSymbols.c
-    src/semantic/semanticScope.c
-    src/semantic/semanticTypes.c
-    src/semantic/semanticCheck.c
-    src/semantic/semanticBuiltins.c
-    src/semantic/semanticUtils.c
+    src/frontend/lexer/lexer.c
+    src/frontend/parser/parserCore.c
+    src/frontend/parser/parserExpression.c
+    src/frontend/parser/parserStatement.c
+    src/frontend/parser/parserDeclaration.c
+    src/frontend/parser/parserFunction.c
+    src/frontend/parser/parserType.c
+    src/frontend/parser/parserAST.c
+    src/frontend/parser/parserHelpers.c
+    src/frontend/semantic/semanticCore.c
+    src/frontend/semantic/semanticTable.c
+    src/frontend/semantic/semanticSymbols.c
+    src/frontend/semantic/semanticScope.c
+    src/frontend/semantic/semanticTypes.c
+    src/frontend/semantic/semanticCheck.c
+    src/frontend/semantic/semanticBuiltins.c
+    src/frontend/semantic/semanticUtils.c
+    src/middleend/IR/ir.c
+    src/middleend/IR/irHelpers.c
+    src/middleend/IR/optimization.c
+    src/backend/codeGeneration/codegen.c
+    src/backend/codeGeneration/dataPool.c
+    src/backend/codeGeneration/emiter.c
+    src/backend/codeGeneration/stringBuffer.c
+    src/backend/codeGeneration/variableHandling.c
     src/errorHandling/errorHandling.c
     src/errorHandling/errors.c
-    src/IR/ir.c
-    src/IR/irHelpers.c
-    src/IR/optimization.c
-    src/codeGeneration/codegen.c
-    src/codeGeneration/dataPool.c
-    src/codeGeneration/emiter.c
-    src/codeGeneration/stringBuffer.c
-    src/codeGeneration/variableHandling.c
     src/modules/interface.c
     src/modules/build.c
 )
-
 add_library(compiler_lib ${LIB_SOURCES})
 target_include_directories(compiler_lib PUBLIC
-    src/lexer src/parser src/errorHandling src/semantic
-    src/IR src/codeGeneration src/modules
+    src/frontend/lexer src/frontend/parser src/frontend/semantic
+    src/middleend/IR src/backend/codeGeneration
+    src/errorHandling src/modules
 )
-
 add_executable(orn src/main.c)
 target_link_libraries(orn compiler_lib)
-
 configure_file(src/runtime/runtime.s runtime.s COPYONLY)
-
 if(EXISTS "${CMAKE_SOURCE_DIR}/unity/src/unity.c" AND 
    EXISTS "${CMAKE_SOURCE_DIR}/tests/frontEnd/frontend.c")
     enable_testing()

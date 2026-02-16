@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "./stringBuffer.h"
+#include "stringBuffer.h"
 
 StringBuffer sbCreate(size_t init){
     StringBuffer sb = {0};

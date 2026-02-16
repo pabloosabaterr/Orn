@@ -5,11 +5,11 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "./stringBuffer.h"
-#include "./dataPool.h"
-#include "../IR/ir.h"
-#include "./variableHandling.h"
-#include "../modules/interface.h"
+#include "stringBuffer.h"
+#include "dataPool.h"
+#include "ir.h"
+#include "variableHandling.h"
+#include "interface.h"
 
 typedef struct FuncInfo {
     const char *name;

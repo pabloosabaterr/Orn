@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "./codegen.h"
+#include "codegen.h"
 
 int isFloatingPoint(IrDataType type){
     return type == IR_TYPE_DOUBLE || type == IR_TYPE_FLOAT;

@@ -3,7 +3,7 @@
 
 #include "parser.h"
 #include "errorHandling.h"
-#include "../lexer/lexer.h"
+#include "lexer.h"
 
 // macros
 

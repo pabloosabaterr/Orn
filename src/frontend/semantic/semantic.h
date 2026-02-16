@@ -1,8 +1,8 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
-#include "../parser/parser.h"
-#include "../errorHandling/errorHandling.h"
+#include "parser.h"
+#include "errorHandling.h"
 
 struct TypeCheckContext;
 typedef struct TypeCheckContext* TypeCheckContext;

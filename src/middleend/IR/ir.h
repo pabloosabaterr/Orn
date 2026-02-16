@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
-#include "../semantic/semantic.h"
+#include "semantic.h"
 
 
 typedef enum {

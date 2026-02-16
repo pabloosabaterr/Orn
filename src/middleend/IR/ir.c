@@ -1,8 +1,8 @@
-#include "./ir.h"
+#include "ir.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "../semantic/semantic.h"
-#include "./irHelpers.h"
+#include "semantic.h"
+#include "irHelpers.h"
 
 IrContext *createIrContext(){
     IrContext *ctx = malloc(sizeof(IrContext));
