@@ -1,6 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>
-#include "./codegen.h"
+#include "codegen.h"
 
 void emitASMLabel(CodeGenContext *ctx, const char *label){
     sbAppendf(&ctx->text, "%s:\n", label);

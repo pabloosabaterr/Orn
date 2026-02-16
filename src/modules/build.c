@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../lexer/lexer.h"
-#include "../codeGeneration/codegen.h"
-#include "../IR/optimization.h"
+#include "lexer.h"
+#include "codegen.h"
+#include "optimization.h"
 
 static char *readFile(const char *fileName){
     FILE *file = fopen(fileName, "r");

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "../lexer/lexer.h"
+#include "lexer.h"
 
 typedef enum {
     // structure

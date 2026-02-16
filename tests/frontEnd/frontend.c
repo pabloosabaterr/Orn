@@ -1,7 +1,7 @@
 #include "unity.h"
 #include "lexer.h"
 #include "parser.h"
-#include "typeChecker.h"
+#include "semantic.h"
 #include "frontend.h"
 
 void setUp(void) { resetErrorCount(); setSilentMode(1); }

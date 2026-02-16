@@ -1,6 +1,6 @@
-#include "./ir.h"
+#include "ir.h"
 #include <stdlib.h>
-#include "./irHelpers.h"
+#include "irHelpers.h"
 
 int binaryConstant(IrInstruction *inst){
     return inst->ar1.type == OPERAND_CONSTANT && inst->ar2.type == OPERAND_CONSTANT;

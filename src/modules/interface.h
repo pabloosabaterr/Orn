@@ -1,9 +1,8 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
-#include "../parser/parser.h"
-#include "../semantic/symbolTable.h"
-#include "../semantic/typeChecker.h"
+#include "parser.h"
+#include "semantic.h"
 
 typedef struct ExportedFunction {
     char *name;

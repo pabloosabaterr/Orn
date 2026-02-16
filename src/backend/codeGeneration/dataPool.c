@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include "./codegen.h"
-#include "./emiter.h"
+#include "codegen.h"
+#include "emiter.h"
 
 StringEntry *findStringLit(CodeGenContext *ctx, const char *str, size_t len){
     StringEntry *entry = ctx->stringPool;
