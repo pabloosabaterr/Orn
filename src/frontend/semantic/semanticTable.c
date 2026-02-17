@@ -8,6 +8,65 @@ void freeSymbol(Symbol symbol) {
     free(symbol);
 }
 
+void freeSymbolTable(SymbolTable table) {
+    if (!table) return;
+
+    SymbolTable child = table->child;
+    while (child) {
+        SymbolTable nextChild = child->brother;
+        freeSymbolTable(child);
+        child = nextChild;
+    }
+
+    for (int i = 0; i < table->bucketCount; i++) {
+        Symbol current = table->symbols[i];
+        while (current) {
+            Symbol next = current->next;
+            freeSymbol(current);
+            current = next;
+        }
+    }
+
+    free(table->symbols);
+    free(table);
+}
+
+/**
+ * symbols Hashtable operations 
+ */
+
+/* hash documentation http://www.isthe.com/chongo/tech/comp/fnv/ */
+static uint32_t hashName(const char* name, size_t len){
+    uint32_t hash = 2166136261u;
+    for (size_t i = 0; i < len; i++) {
+        hash ^= (unsigned char)name[i];
+        hash *= 16777619u;
+    }
+    return hash;
+}
+
+static int rehashTable(SymbolTable table){
+    int newCount = table->bucketCount * 2;
+    Symbol* newBuckets = calloc(newCount, sizeof(Symbol));
+    if(!newBuckets) return 0;
+
+    for(int i = 0; i < table->bucketCount; ++i){
+        Symbol current = table->symbols[i];
+        while(current){
+            Symbol next = current->next;
+            uint32_t index = hashName(current->nameStart, current->nameLength) & (newCount - 1);
+            current->next = newBuckets[index];
+            newBuckets[index] = current;
+            current = next;
+        }
+    }
+
+    free(table->symbols);
+    table->symbols = newBuckets;
+    table->bucketCount = newCount;
+    return 1;
+}
+
 /**
  * Parammeter helpers
  */
@@ -42,7 +101,12 @@ SymbolTable createSymbolTable(SymbolTable parent) {
     SymbolTable table = malloc(sizeof(struct SymbolTable));
     if (table == NULL) return NULL;
 
-    table->symbols = NULL;
+    table->symbols = calloc(SYMBOL_TABLE_BUCKETS, sizeof(Symbol));
+    if (!table->symbols) {
+        free(table);
+        return NULL;
+    }
+    table->bucketCount = SYMBOL_TABLE_BUCKETS;
     table->parent = parent;
     table->child = NULL;
     table->brother = NULL;
@@ -58,37 +122,16 @@ SymbolTable createSymbolTable(SymbolTable parent) {
     return table;
 }
 
-void freeSymbolTable(SymbolTable table) {
-    if (table == NULL) return;
-
-    /* Free all child scopes first */
-    SymbolTable child = table->child;
-    while (child != NULL) {
-        SymbolTable nextChild = child->brother;
-        freeSymbolTable(child);
-        child = nextChild;
-    }
-
-    /* Free symbols in this scope */
-    Symbol current = table->symbols;
-    while (current != NULL) {
-        Symbol next = current->next;
-        freeSymbol(current);
-        current = next;
-    }
-
-    free(table);
-}
-
 /** 
  * Look up table
  */
 
 Symbol lookupSymbolCurrentOnly(SymbolTable table, const char *nameStart, size_t nameLength) {
-    if (table == NULL || nameStart == NULL) return NULL;
+    if (!table || !nameStart) return NULL;
 
-    Symbol current = table->symbols;
-    while (current != NULL) {
+    uint32_t index = hashName(nameStart, nameLength) & (table->bucketCount - 1);
+    Symbol current = table->symbols[index];
+    while (current) {
         if (current->nameLength == nameLength &&
             memcmp(current->nameStart, nameStart, nameLength) == 0) {
             return current;
@@ -99,9 +142,10 @@ Symbol lookupSymbolCurrentOnly(SymbolTable table, const char *nameStart, size_t 
 }
 
 Symbol lookupSymbol(SymbolTable table, const char *nameStart, size_t nameLength) {
-    if (table == NULL || nameStart == NULL) return NULL;
+    if (!table || !nameStart) return NULL;
 
-    Symbol current = table->symbols;
+    uint32_t index = hashName(nameStart, nameLength) & (table->bucketCount - 1);
+    Symbol current = table->symbols[index];
     while (current != NULL) {
         if (current->nameLength == nameLength &&
             memcmp(current->nameStart, nameStart, nameLength) == 0) {
@@ -122,10 +166,14 @@ Symbol lookupSymbol(SymbolTable table, const char *nameStart, size_t nameLength)
  */
 
 Symbol addSymbol(SymbolTable table, const char *nameStart, size_t nameLength, DataType type, int line, int column) {
-    if (table == NULL || nameStart == NULL) return NULL;
+    if (!table || !nameStart) return NULL;
 
     Symbol existing = lookupSymbolCurrentOnly(table, nameStart, nameLength);
-    if (existing != NULL) return NULL;
+    if (existing) return NULL;
+
+    if(table->symbolCount >= table->bucketCount * SYMBOL_TABLE_LOAD_FACTOR){
+        rehashTable(table);
+    }
 
     Symbol newSymbol = malloc(sizeof(struct Symbol));
     if (newSymbol == NULL) return NULL;
@@ -142,8 +190,10 @@ Symbol addSymbol(SymbolTable table, const char *nameStart, size_t nameLength, Da
     newSymbol->parameters = NULL;
     newSymbol->paramCount = 0;
     newSymbol->baseType = type;
-    newSymbol->next = table->symbols;
-    table->symbols = newSymbol;
+
+    uint32_t index = hashName(nameStart, nameLength) & (table->bucketCount - 1);
+    newSymbol->next = table->symbols[index];
+    table->symbols[index] = newSymbol;
     table->symbolCount++;
 
     return newSymbol;
@@ -155,13 +205,17 @@ Symbol addSymbolFromNode(SymbolTable table, ASTNode node, DataType type) {
 }
 
 static Symbol addFunctionSymbol(SymbolTable symbolTable, const char *nameStart, size_t nameLength, DataType returnType, FunctionParameter parameters, int paramCount, int line, int column) {
-    if (symbolTable == NULL || nameStart == NULL) return NULL;
+    if (!symbolTable || !nameStart) return NULL;
 
     Symbol exists = lookupSymbol(symbolTable, nameStart, nameLength);
-    if (exists != NULL) return NULL;
+    if (exists) return NULL;
+
+    if(symbolTable->symbolCount >= symbolTable->bucketCount * SYMBOL_TABLE_LOAD_FACTOR){
+        rehashTable(symbolTable);
+    }
 
     Symbol newSymbol = malloc(sizeof(struct Symbol));
-    if (newSymbol == NULL) return NULL;
+    if (!newSymbol) return NULL;
     memset(newSymbol, 0, sizeof(struct Symbol));
 
     newSymbol->nameStart = nameStart;
@@ -176,8 +230,9 @@ static Symbol addFunctionSymbol(SymbolTable symbolTable, const char *nameStart, 
     newSymbol->paramCount = paramCount;
     newSymbol->functionScope = NULL;
 
-    newSymbol->next = symbolTable->symbols;
-    symbolTable->symbols = newSymbol;
+    uint32_t index = hashName(nameStart, nameLength) & (symbolTable->bucketCount - 1);
+    newSymbol->next = symbolTable->symbols[index];
+    symbolTable->symbols[index] = newSymbol;
     symbolTable->symbolCount++;
 
     return newSymbol;
