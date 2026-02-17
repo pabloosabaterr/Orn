@@ -4,6 +4,9 @@
 #include "parser.h"
 #include "errorHandling.h"
 
+#define SYMBOL_TABLE_BUCKETS 32
+#define SYMBOL_TABLE_LOAD_FACTOR 0.75
+
 struct TypeCheckContext;
 typedef struct TypeCheckContext* TypeCheckContext;
 
@@ -128,7 +131,8 @@ typedef struct Symbol {
  * @brief Symbol table structure for managing symbols within a scope.
  */
 typedef struct SymbolTable {
-    Symbol symbols;
+    Symbol *symbols;
+    int bucketCount;
     struct SymbolTable *parent;
     struct SymbolTable *child;
     struct SymbolTable *brother;
