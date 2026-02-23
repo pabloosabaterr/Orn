@@ -1,3 +1,16 @@
+/**
+ * @file semanticTable.c
+ * @brief Symbol table data structure implementation.
+ *
+ * Responsibilities:
+ *   - Symbol table creation / destruction
+ *   - Symbol insertion (variable & function)
+ *   - Symbol lookup (current-only and scope-walking)
+ *   - Parameter list creation / destruction
+ *
+ * Pure data structure — no semantic rules live here.
+ */
+
 #include "semanticInternal.h"
 
 void freeSymbol(Symbol symbol) {

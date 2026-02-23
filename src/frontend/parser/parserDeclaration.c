@@ -1,3 +1,16 @@
+/**
+ * @file parserDeclaration.c
+ * @brief Variable and array declaration parsing.
+ *
+ * Responsibilities:
+ *   - parseDeclaration(): const/let variable declarations with optional init
+ *   - parseArrayDec(): typed array declarations (e.g., int[5])
+ *
+ * Declarations sit between statements and expressions in complexity.
+ * They rely on parserType.c for type parsing and parserExpression.c for
+ * initializer expressions.
+ */
+
 #include "parserInternal.h"
 
 #include <stdlib.h>

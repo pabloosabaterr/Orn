@@ -1,3 +1,14 @@
+/**
+ * @file semanticScope.c
+ * @brief Scope stack and block-scope queue management.
+ *
+ * Responsibilities:
+ *   - Block scope enqueue / dequeue for IR generation
+ *
+ * Note: createSymbolTable / freeSymbolTable live in semanticTable.c
+ * because they are pure data-structure operations.
+ */
+
 #include "semanticInternal.h"
 
 /**

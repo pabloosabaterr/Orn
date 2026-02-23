@@ -1,3 +1,22 @@
+/**
+ * @file semanticTypes.c
+ * @brief Type comparison, inference, compatibility, and type utilities.
+ *
+ * Responsibilities:
+ *   - Type equality and compatibility checks
+ *   - Type inference for expressions
+ *   - Numeric promotion rules
+ *   - Cast validation
+ *   - Operation result type determination
+ *   - Type name strings
+ *   - Stack size / alignment helpers
+ *   - Pointer chain resolution
+ *   - Member access type resolution
+ *
+ * Pure type logic — no AST walking for validation purposes.
+ * (getExpressionType does traverse to *infer* types, not to validate.)
+ */
+
 #include "semanticInternal.h"
 
 /**

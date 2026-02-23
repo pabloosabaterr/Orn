@@ -1,3 +1,14 @@
+/**
+ * @file semanticSymbols.c
+ * @brief Symbol resolution and identifier-related helpers.
+ *
+ * Responsibilities:
+ *   - Identifier resolution with error reporting
+ *   - AST node-type → DataType conversion
+ *
+ * No type compatibility logic lives here.
+ */
+
 #include "semanticInternal.h"
 
 /* This are just two helpers */

@@ -1,3 +1,12 @@
+/**
+ * @file semantic.h
+ * @brief Public API for the semantic analysis.
+ *
+ * This is the ONLY header that code outside semantic/ should include.
+ * Provides type definitions, symbol table interface, type checking context,
+ * and the main entry point for semantic analysis of AST trees.
+ */
+
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
@@ -165,9 +174,7 @@ TypeCheckContext typeCheckAST(ASTNode ast, const char *sourceCode,
 TypeCheckContext createTypeCheckContext(const char *sourceCode, const char *filename);
 void freeTypeCheckContext(TypeCheckContext context);
 
-/* ═══════════════════════════════════════════════════════════════════════════
- *  Symbol table operations (semantic_table.c)
- * ═══════════════════════════════════════════════════════════════════════════ */
+/* Symbol table */
 
 SymbolTable createSymbolTable(SymbolTable parent);
 void freeSymbolTable(SymbolTable symbolTable);

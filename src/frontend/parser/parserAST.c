@@ -1,3 +1,17 @@
+/**
+ * @file parserAST.c
+ * @brief AST node construction, literal type detection, and node utilities.
+ *
+ * Responsibilities:
+ *   - createNode() / createValNode(): allocate and initialize AST nodes
+ *   - detectLitType(): classify a token as a literal type or variable
+ *   - getNodeTypeName(): map NodeTypes → display string
+ *   - extractText() / nodeValueEquals(): text-level utilities on nodes
+ *
+ * This module has no knowledge of grammar rules — it only knows how to
+ * create nodes and inspect token values.
+ */
+
 #include "parserInternal.h"
 
 #include <ctype.h>

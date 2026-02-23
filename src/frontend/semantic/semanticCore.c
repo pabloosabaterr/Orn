@@ -1,3 +1,16 @@
+/**
+ * @file semanticCore.c
+ * @brief Entry point and orchestration for semantic analysis.
+ *
+ * Responsibilities:
+ *   - Create / destroy TypeCheckContext
+ *   - Register built-ins
+ *   - Walk the AST via typeCheckNode (main dispatch)
+ *   - Delegate to specialised check functions
+ *
+ * Equivalent to parserCore.c in the parser.
+ */
+
 #include "semanticInternal.h"
 
 TypeCheckContext createTypeCheckContext(const char *sourceCode, const char *filename) {

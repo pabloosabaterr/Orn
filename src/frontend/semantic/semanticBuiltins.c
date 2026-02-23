@@ -1,3 +1,17 @@
+/**
+ * @file semanticBuiltins.c
+ * @brief Built-in type and function registration.
+ *
+ * Responsibilities:
+ *   - Static built-in function table (defined ONLY here)
+ *   - Built-in parameter initialization
+ *   - Populating the initial global symbol table with built-ins
+ *   - Overload resolution for built-in functions
+ *   - Built-in function name checking
+ *
+ * All built-in data tables are static and defined ONLY in this file.
+ */
+
 #include "semanticInternal.h"
 
 static BuiltInFunction builtInFunctions[] = {

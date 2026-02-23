@@ -1,3 +1,22 @@
+/**
+ * @file semanticCheck.c
+ * @brief AST semantic validation logic.
+ *
+ * Responsibilities:
+ *   - Variable declaration validation
+ *   - Assignment validation
+ *   - Variable usage validation
+ *   - Function definition & call validation
+ *   - Return statement validation
+ *   - Cast expression validation
+ *   - Struct definition & variable validation
+ *   - Array/scalar/pointer initialization validation
+ *   - Const violation checking
+ *
+ * Uses: semanticTypes, semanticSymbols, semanticScope
+ * Equivalent to parserStatement.c + parserExpression.c in the parser subsystem.
+ */
+
 #include "semanticInternal.h"
 
 #include <assert.h>

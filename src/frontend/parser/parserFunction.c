@@ -1,3 +1,22 @@
+/**
+ * @file parserFunction.c
+ * @brief Function definition, function call, and struct definition parsing.
+ *
+ * Responsibilities:
+ *   - parseFunction(): fn name(params) -> retType { body }
+ *   - parseFunctionCall(): name(args)
+ *   - parseCommaSeparatedLists(): generic ( elem, elem, ... ) parser
+ *   - parseParameter() / parseArg(): individual parameter and argument
+ *   - parseReturnType(): -> type
+ *   - parseStruct(): struct definition with field list
+ *   - parseStructField(): single field in a struct definition
+ *   - parseStructFieldLit(): single field in a struct literal
+ *
+ * Functions and structs are grouped together because they share the
+ * comma-separated-list pattern and both represent top-level definitions.
+ * they can be splitted in the future if logic grows too much.
+ */
+
 #include "parserInternal.h"
 
 #include <stdlib.h>

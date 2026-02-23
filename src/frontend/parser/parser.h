@@ -1,3 +1,15 @@
+/**
+ * @file parser.h
+ * @brief Public interface for the parser module.
+ *
+ * This header exposes only what external consumers of the parser need:
+ * the AST node types, the AST data structures, and the public API functions.
+ *
+ * Internal parsing machinery (macros, operator tables, precedence levels,
+ * internal function prototypes) lives in parserInternal.h and is not
+ * visible to code outside the parser module.
+ */
+
 #ifndef PARSER_H
 #define PARSER_H
 

@@ -1,3 +1,20 @@
+/**
+ * @file parserStatement.c
+ * @brief Statement-level parsing and control-flow constructs.
+ *
+ * Responsibilities:
+ *   - parseStatement(): top-level dispatch via statementHandlers[]
+ *   - parseExpressionStatement(): expression followed by ';'
+ *   - parseBlock(): brace-delimited statement list
+ *   - parseIf() / parseLoop() / parseForLoop(): control flow
+ *   - parseReturnStatement(): return with optional expression
+ *   - parseImport() / parseExportFunction(): module system
+ *
+ * This file consumes tokens at the statement level and delegates to
+ * parserExpression.c for expression sub-trees and parserDeclaration.c for
+ * declarations.
+ */
+
 #include "parserInternal.h"
 
 #include <stdlib.h>

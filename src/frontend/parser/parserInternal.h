@@ -1,3 +1,15 @@
+/**
+ * @file parserInternal.h
+ * @brief Internal definitions shared across parser translation units.
+ *
+ * This header is included by every parser*.c file but must NOT be included
+ * by code outside the parser module.  It contains:
+ *   - Convenience macros for token handling and error-checked node creation
+ *   - Operator precedence and associativity tables (Pratt parser)
+ *   - Statement dispatch table type
+ *   - All internal function prototypes
+ */
+
 #ifndef PARSER_INTERNAL_H
 #define PARSER_INTERNAL_H
 

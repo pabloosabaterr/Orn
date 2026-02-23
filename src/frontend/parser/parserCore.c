@@ -1,3 +1,19 @@
+/**
+ * @file parserCore.c
+ * @brief Parser entry point and top-level orchestration.
+ *
+ * Responsibilities:
+ *   - ASTGenerator(): builds the root PROGRAM node and drives statement parsing
+ *   - Statement dispatch table (statementHandlers[])
+ *   - Error context creation from parser state
+ *   - AST pretty-printing (printAST / printASTTree)
+ *   - AST memory management (freeAST / freeASTContext)
+ *
+ * This file owns the "main loop" of the parser but delegates all grammar-
+ * specific work to the expression, statement, declaration, and function
+ * sub-modules.
+ */
+
 #include "parserInternal.h"
 
 #include <stdio.h>

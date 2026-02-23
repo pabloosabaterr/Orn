@@ -1,3 +1,16 @@
+/**
+ * @file semanticUtils.c
+ * @brief Small internal helpers for error reporting and context management.
+ *
+ * Responsibilities:
+ *   - Error context creation from AST nodes
+ *   - Error reporting with text extraction
+ *   - Source line extraction
+ *   - Error context cleanup
+ *
+ * These helpers don't belong to types, symbols, scopes, or built-ins.
+ */
+
 #include "semanticInternal.h"
 
 char *extractSourceLine(const char *source, int lineNum) {

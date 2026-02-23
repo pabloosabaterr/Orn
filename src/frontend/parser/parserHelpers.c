@@ -1,3 +1,14 @@
+/**
+ * @file parserHelpers.c
+ * @brief Operator tables and lookup utilities for the Pratt parser.
+ *
+ * Responsibilities:
+ *   - Operator precedence / associativity table (operators[])
+ *   - getOperatorInfo(): binary operator lookup
+ *   - getUnaryOpType(): prefix-operator mapping
+ *
+ */
+
 #include "parserInternal.h"
 
 static const OperatorInfo operators[] = {

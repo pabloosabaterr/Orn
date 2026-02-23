@@ -1,3 +1,14 @@
+/**
+ * @file parserType.c
+ * @brief Type parsing and type-token classification.
+ *
+ * Responsibilities:
+ *   - parseType(): parse a full type expression (pointers, references, base)
+ *   - getDecType() / getTypeNodeFromToken(): map token → NodeTypes for types
+ *   - isTypeToken(): predicate for built-in type keywords
+ *
+ */
+
 #include "parserInternal.h"
 
 NodeTypes getDecType(TokenType type){

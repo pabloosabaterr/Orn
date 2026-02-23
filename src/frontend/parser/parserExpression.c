@@ -1,3 +1,22 @@
+/**
+ * @file parserExpression.c
+ * @brief Expression parsing using the Pratt (operator-precedence) algorithm.
+ *
+ * Responsibilities:
+ *   - parseExpression(): Pratt parser main loop (binary operators, ternary, cast)
+ *   - parseUnary(): prefix operators and postfix increment/decrement
+ *   - parsePrimaryExp(): atoms — literals, identifiers, function calls,
+ *     parenthesized expressions, member access, array access, pointer/ref
+ *   - parseTernary(): ternary conditional (condition ? true : false)
+ *   - parseCastExpression(): type-cast via `as`
+ *   - parseBlockExpression(): block-as-expression (reuses parseBlock)
+ *   - parseArrLit() / parseStructLit(): compound literals
+ *   - parseArrayAccess(): subscript operator
+ *
+ * This is the most grammar-dense file.  It depends on parserType.c for
+ * type-token queries and parserFunction.c for function-call parsing.
+ */
+
 #include "parserInternal.h"
 
 #include <stdio.h>
