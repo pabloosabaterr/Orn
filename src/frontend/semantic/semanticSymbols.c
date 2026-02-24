@@ -23,7 +23,14 @@ Symbol lookupSymbolOrError(TypeCheckContext context, ASTNode node) {
 
 DataType getDataTypeFromNode(NodeTypes nodeType) {
     switch (nodeType) {
-        case REF_INT:    return TYPE_INT;
+        case REF_I8:    return TYPE_I8;
+        case REF_I16:   return TYPE_I16;
+        case REF_I32:   return TYPE_I32;
+        case REF_I64:   return TYPE_I64;
+        case REF_U8:    return TYPE_U8;
+        case REF_U16:   return TYPE_U16;
+        case REF_U32:   return TYPE_U32;
+        case REF_U64:   return TYPE_U64;
         case REF_FLOAT:  return TYPE_FLOAT;
         case REF_STRING: return TYPE_STRING;
         case REF_BOOL:   return TYPE_BOOL;

@@ -17,7 +17,7 @@ CodeGenContext *createCodeGenContext(void) {
     ctx->currentFn = NULL;
     ctx->inFn = 0;
     ctx->maxTempNum = 0;
-    ctx->lastParamType = IR_TYPE_INT;
+    ctx->lastParamType = IR_TYPE_I64;
     
     return ctx;
 }
@@ -94,13 +94,12 @@ void loadOp(CodeGenContext *ctx, IrOperand *op, const char *reg){
                     emitInstruction(ctx, "mov%s .LC%d(%%rip), %s", getSSESuffix(op->dataType), label, reg);
                     break;
                 }
-                // ints and bools
                 default: 
-                    emitInstruction(ctx, "mov%s $%d, %s",
-                                getIntSuffix(op->dataType),
-                                op->value.constant.intVal,
-                                getIntReg(reg, op->dataType));
-                    break;
+                emitInstruction(ctx, "mov%s $%ld, %s",
+                            getIntSuffix(op->dataType),
+                            (long)op->value.constant.intVal,
+                            getIntReg(reg, op->dataType));
+                break;
             }
             break;
         case OPERAND_VAR:
@@ -145,8 +144,8 @@ void storeOp(CodeGenContext *ctx, const char *reg, IrOperand *op){
         emitInstruction(ctx, "mov%s %s, %d(%%rbp)", getIntSuffix(op->dataType), getIntReg(reg, op->dataType), off);
     }
 }
-void genPointerLoad(CodeGenContext *ctx, IrInstruction *inst) {
 
+void genPointerLoad(CodeGenContext *ctx, IrInstruction *inst) {
     IrOperand *result = &inst->result;
     IrOperand *base = &inst->ar1;
     IrOperand *offset = &inst->ar2;
@@ -161,19 +160,36 @@ void genPointerLoad(CodeGenContext *ctx, IrInstruction *inst) {
 
     loadOp(ctx, offset, "a");
 
-    if (isFloatingPoint(elemType)) {
-        emitInstruction(ctx, "mov%s %d(%%rbp,%%rax,%d), %%xmm0", getSSESuffix(elemType),
-                        baseVar->stackOffset, elemSize);
-        storeOp(ctx, "%xmm0", result);
+    if (baseVar->isAddresable) {
+        // Stack array: base address is rbp + stackOffset
+        if (isFloatingPoint(elemType)) {
+            emitInstruction(ctx, "mov%s %d(%%rbp,%%rax,%d), %%xmm0",
+                            getSSESuffix(elemType), baseVar->stackOffset, elemSize);
+            storeOp(ctx, "%xmm0", result);
+        } else {
+            emitInstruction(ctx, "mov%s %d(%%rbp,%%rax,%d), %s",
+                            getIntSuffix(elemType), baseVar->stackOffset, elemSize,
+                            getIntReg("d", elemType));
+            storeOp(ctx, "d", result);
+        }
     } else {
-        emitInstruction(ctx, "mov%s %d(%%rbp,%%rax,%d), %s", getIntSuffix(elemType),
-                        baseVar->stackOffset, elemSize, getIntReg("a", elemType));
-        storeOp(ctx, "a", result);
+        // Pointer: load the address stored in the variable, then index through it
+        emitInstruction(ctx, "movq %d(%%rbp), %%rcx", baseVar->stackOffset);
+        if (elemSize > 1) {
+            emitInstruction(ctx, "imulq $%d, %%rax, %%rax", elemSize);
+        }
+        if (isFloatingPoint(elemType)) {
+            emitInstruction(ctx, "mov%s (%%rcx,%%rax,1), %%xmm0", getSSESuffix(elemType));
+            storeOp(ctx, "%xmm0", result);
+        } else {
+            emitInstruction(ctx, "mov%s (%%rcx,%%rax,1), %s",
+                            getIntSuffix(elemType), getIntReg("d", elemType));
+            storeOp(ctx, "d", result);
+        }
     }
 }
 
 void genPointerStore(CodeGenContext *ctx, IrInstruction *inst) {
-
     IrOperand *base = &inst->result;
     IrOperand *offset = &inst->ar1;
     IrOperand *value = &inst->ar2;
@@ -193,13 +209,30 @@ void genPointerStore(CodeGenContext *ctx, IrInstruction *inst) {
     }
 
     loadOp(ctx, offset, "a");
-    
-    if (isFloatingPoint(elemType)) {
-        emitInstruction(ctx, "mov%s %%xmm0, %d(%%rbp,%%rax,%d)", getSSESuffix(elemType),
-                        baseVar->stackOffset, elemSize);
+
+    if (baseVar->isAddresable) {
+        // Stack array: base address is rbp + stackOffset
+        if (isFloatingPoint(elemType)) {
+            emitInstruction(ctx, "mov%s %%xmm0, %d(%%rbp,%%rax,%d)",
+                            getSSESuffix(elemType), baseVar->stackOffset, elemSize);
+        } else {
+            emitInstruction(ctx, "mov%s %s, %d(%%rbp,%%rax,%d)",
+                            getIntSuffix(elemType), getIntReg("d", elemType),
+                            baseVar->stackOffset, elemSize);
+        }
     } else {
-        emitInstruction(ctx, "mov%s %s, %d(%%rbp,%%rax,%d)", getIntSuffix(elemType),
-                        getIntReg("d", elemType), baseVar->stackOffset, elemSize);
+        // Pointer: load the address stored in the variable, then index through it
+        emitInstruction(ctx, "movq %d(%%rbp), %%rcx", baseVar->stackOffset);
+        if (elemSize > 1) {
+            emitInstruction(ctx, "imulq $%d, %%rax, %%rax", elemSize);
+        }
+        if (isFloatingPoint(elemType)) {
+            emitInstruction(ctx, "mov%s %%xmm0, (%%rcx,%%rax,1)",
+                            getSSESuffix(elemType));
+        } else {
+            emitInstruction(ctx, "mov%s %s, (%%rcx,%%rax,1)",
+                            getIntSuffix(elemType), getIntReg("d", elemType));
+        }
     }
 }
 
@@ -269,15 +302,25 @@ void genBinaryOp(CodeGenContext *ctx, IrInstruction *inst){
             case IR_MUL:
                 emitInstruction(ctx, "imul%s %s, %s", suffix, regC, regA);
                 break;
-            case IR_DIV:
-                emitInstruction(ctx, "cltd");
+            case IR_DIV: {
+                int size = getTypeSize(type);
+                if      (size == 8) emitInstruction(ctx, "cqto");
+                else if (size == 4) emitInstruction(ctx, "cltd");
+                else if (size == 2) emitInstruction(ctx, "cwtd");
+                else                emitInstruction(ctx, "cbw");
                 emitInstruction(ctx, "idiv%s %s", suffix, regC);
                 break;
-            case IR_MOD:
-                emitInstruction(ctx, "cltd");
+            }
+            case IR_MOD: {
+                int size = getTypeSize(type);
+                if      (size == 8) emitInstruction(ctx, "cqto");
+                else if (size == 4) emitInstruction(ctx, "cltd");
+                else if (size == 2) emitInstruction(ctx, "cwtd");
+                else                emitInstruction(ctx, "cbw");
                 emitInstruction(ctx, "idiv%s %s", suffix, regC);
                 emitInstruction(ctx, "mov%s %s, %s", suffix, getIntReg("d", type), regA);
                 break;
+            }
             default:
                 break;
         }
@@ -410,13 +453,26 @@ void genStore(CodeGenContext *ctx, IrInstruction *inst) {
 
 void genAddrof(CodeGenContext *ctx, IrInstruction *inst) {
     if (inst->ar1.type == OPERAND_VAR) {
-        VarLoc *var = findVar(ctx, inst->ar1.value.var.name, inst->ar1.value.var.nameLen);
-        if (!var) {
-            addLocalVar(ctx, inst->ar1.value.var.name, inst->ar1.value.var.nameLen, inst->ar1.dataType);
-        }
         int off = getVarOffset(ctx, inst->ar1.value.var.name, inst->ar1.value.var.nameLen);
         
-        emitInstruction(ctx, "leaq %d(%%rbp), %%rax", off);
+        if (inst->ar2.type != OPERAND_NONE) {
+            // &array[index]: leaq offset(%rbp), %rax; then add index*elemSize
+            VarLoc *var = findVar(ctx, inst->ar1.value.var.name, inst->ar1.value.var.nameLen);
+            int elemSize = var ? getTypeSize(var->type) : 1;
+            loadOp(ctx, &inst->ar2, "c");
+            emitInstruction(ctx, "leaq %d(%%rbp), %%rax", off);
+            if (elemSize > 1) {
+                emitInstruction(ctx, "imulq $%d, %%rcx, %%rcx", elemSize);
+            }
+            emitInstruction(ctx, "addq %%rcx, %%rax");
+        } else {
+            // &variable
+            VarLoc *var = findVar(ctx, inst->ar1.value.var.name, inst->ar1.value.var.nameLen);
+            if (!var) {
+                addLocalVar(ctx, inst->ar1.value.var.name, inst->ar1.value.var.nameLen, inst->ar1.dataType);
+            }
+            emitInstruction(ctx, "leaq %d(%%rbp), %%rax", off);
+        }
         storeOp(ctx, "a", &inst->result);
     }
 }
@@ -485,7 +541,7 @@ void genParam(CodeGenContext *ctx, IrInstruction *inst, int paramIndex) {
         } else {
             // Spill to stack
             loadOp(ctx, &inst->ar1, "%xmm0");
-            emitInstruction(ctx, "sub%s $8, %%rsp", getIntSuffix(IR_TYPE_STRING));
+            emitInstruction(ctx, "subq $8, %%rsp");
             emitInstruction(ctx, "mov%s %%xmm0, (%%rsp)", getSSESuffix(type));
         }
     } else {
@@ -517,24 +573,21 @@ void genMemberLoad(CodeGenContext *ctx, IrInstruction *inst) {
     IrOperand *structVar = &inst->ar1;
     IrOperand *offsetOp = &inst->ar2;
     
-    if (structVar->type != OPERAND_VAR || offsetOp->type != OPERAND_CONSTANT) {
-        return;
-    }
-    
     int32_t memberOffset = offsetOp->value.constant.intVal;
     IrDataType type = dest->dataType;
     
-    // Find the variable to check if it's an array/direct struct
-    VarLoc *v = findVar(ctx, structVar->value.var.name, structVar->value.var.nameLen);
-    if (!v) return;
+    if(structVar->type == OPERAND_TEMP){
+        loadOp(ctx, structVar, "a");
+    } else if (structVar->type == OPERAND_VAR){
+        VarLoc *v = findVar(ctx, structVar->value.var.name, structVar->value.var.nameLen);
+        if (!v) return;
 
-    if (v->isAddresable) {
-        // It is a local struct: Load the address of the stack slot
-        emitInstruction(ctx, "leaq %d(%%rbp), %%rax", v->stackOffset);
-    } else {
-        // It is a pointer: Load the address stored in the stack slot
-        emitInstruction(ctx, "movq %d(%%rbp), %%rax", v->stackOffset);
-    }
+        if (v->isAddresable) {
+            emitInstruction(ctx, "leaq %d(%%rbp), %%rax", v->stackOffset);
+        } else {
+            emitInstruction(ctx, "movq %d(%%rbp), %%rax", v->stackOffset);
+        }
+    } else return;
     
     if (isFloatingPoint(type)) {
         emitInstruction(ctx, "mov%s %d(%%rax), %%xmm0", getSSESuffix(type), memberOffset);
@@ -562,17 +615,21 @@ void genMemberStore(CodeGenContext *ctx, IrInstruction *inst){
         loadOp(ctx, valueOp, "c");
     }
 
-    // Find variable to check type
-    VarLoc *v = findVar(ctx, structVar->value.var.name, structVar->value.var.nameLen);
-    if (!v) return;
+    if(structVar->type == OPERAND_TEMP){
+        loadOp(ctx, structVar, "a");
+    } else if (structVar->type == OPERAND_VAR){
+        // Find variable to check type
+        VarLoc *v = findVar(ctx, structVar->value.var.name, structVar->value.var.nameLen);
+        if (!v) return;
 
-    if (v->isAddresable) {
-        // Local struct -> Load address of stack slot
-        emitInstruction(ctx, "leaq %d(%%rbp), %%rax", v->stackOffset);
-    } else {
-        // Pointer -> Load stored address
-        emitInstruction(ctx, "movq %d(%%rbp), %%rax", v->stackOffset);
-    }
+        if (v->isAddresable) {
+            // Local struct -> Load address of stack slot
+            emitInstruction(ctx, "leaq %d(%%rbp), %%rax", v->stackOffset);
+        } else {
+            // Pointer -> Load stored address
+            emitInstruction(ctx, "movq %d(%%rbp), %%rax", v->stackOffset);
+        }
+    } else return;
 
     if(isFloatingPoint(type)){
         emitInstruction(ctx, "mov%s %%xmm0, %d(%%rax)", getSSESuffix(type), memOff);
@@ -585,36 +642,23 @@ void genCall(CodeGenContext *ctx, IrInstruction *inst) {
     const char *fnName = inst->ar1.value.fn.name;
     size_t fnLen = inst->ar1.value.fn.nameLen;
     
-    // Handle built-in print
-    if (fnLen == 5 && memcmp(fnName, "print", 5) == 0) {
-        switch (ctx->lastParamType) {
-            case IR_TYPE_STRING:
-                emitInstruction(ctx, "call print_str_z");
-                break;
-            case IR_TYPE_BOOL:
-                emitInstruction(ctx, "call print_bool");
-                break;
-            case IR_TYPE_INT:
-                emitInstruction(ctx, "call print_int");
-                break;
-            case IR_TYPE_FLOAT:
-                emitInstruction(ctx, "call print_float");
-                break;
-            case IR_TYPE_DOUBLE:
-                emitInstruction(ctx, "call print_double");
-                break;
-            default:
-                emitInstruction(ctx, "call print_int");
-                break;
-        }
-    } else if (fnLen == 4 && memcmp(fnName, "read", 4) == 0) {
+    if (fnLen == 7 && memcmp(fnName, "syscall", 7) == 0) {
+        // genParam placed args in SysV order: rdi, rsi, rdx, rcx, r8, r9, [stack]
+        // Rearrange to syscall ABI: rax=num, rdi=a1, rsi=a2, rdx=a3, r10=a4, r8=a5, r9=a6
+        // Cascade works because each reg is read before being overwritten
+        emitInstruction(ctx, "movq %%rdi, %%rax");   // syscall number
+        emitInstruction(ctx, "movq %%rsi, %%rdi");   // a1
+        emitInstruction(ctx, "movq %%rdx, %%rsi");   // a2
+        emitInstruction(ctx, "movq %%rcx, %%rdx");   // a3
+        emitInstruction(ctx, "movq %%r8, %%r10");    // a4
+        emitInstruction(ctx, "movq %%r9, %%r8");     // a5
+        emitInstruction(ctx, "popq %%r9");            // a6 (was pushed by genParam)
+        emitInstruction(ctx, "syscall");
+
         if (inst->result.type != OPERAND_NONE) {
-            if (inst->result.dataType == IR_TYPE_INT) {
-                emitInstruction(ctx, "call read_int");
-            }
+            storeOp(ctx, "a", &inst->result);
         }
-    }else if(fnLen == 6 && memcmp(fnName, "readln", 6) == 0){
-        emitInstruction(ctx, "call read_str");
+        return;
     } else {
         // Check if this is an imported function
         int found = 0;
@@ -709,52 +753,95 @@ void genFuncEnd(CodeGenContext *ctx, IrInstruction *inst) {
 void genCast(CodeGenContext *ctx, IrInstruction *inst) {
     IrDataType srcType = inst->ar1.dataType;
     IrDataType dstType = inst->result.dataType;
-    
+
     if (srcType == dstType) {
         genCopy(ctx, inst);
         return;
     }
-    
-    // Int to Float
-    if (srcType == IR_TYPE_INT && dstType == IR_TYPE_FLOAT) {
+
+    int srcSize = getTypeSize(srcType);
+    int dstSize = getTypeSize(dstType);
+
+    // Int → Float
+    if (!isFloatingPoint(srcType) && dstType == IR_TYPE_FLOAT) {
         loadOp(ctx, &inst->ar1, "a");
-        emitInstruction(ctx, "cvtsi2ss %%eax, %%xmm0");
+        emitInstruction(ctx, srcSize == 8 ? "cvtsi2ssq %%rax, %%xmm0"
+                                          : "cvtsi2ssl %%eax, %%xmm0");
         storeOp(ctx, "%xmm0", &inst->result);
+        return;
     }
-    // Int to Double
-    else if (srcType == IR_TYPE_INT && dstType == IR_TYPE_DOUBLE) {
+
+    // Int → Double
+    if (!isFloatingPoint(srcType) && dstType == IR_TYPE_DOUBLE) {
         loadOp(ctx, &inst->ar1, "a");
-        emitInstruction(ctx, "cvtsi2sd %%eax, %%xmm0");
+        emitInstruction(ctx, srcSize == 8 ? "cvtsi2sdq %%rax, %%xmm0"
+                                          : "cvtsi2sdl %%eax, %%xmm0");
         storeOp(ctx, "%xmm0", &inst->result);
+        return;
     }
-    // Float to Int
-    else if (srcType == IR_TYPE_FLOAT && dstType == IR_TYPE_INT) {
+
+    // Float → Int
+    if (srcType == IR_TYPE_FLOAT && !isFloatingPoint(dstType)) {
         loadOp(ctx, &inst->ar1, "%xmm0");
-        emitInstruction(ctx, "cvttss2si %%xmm0, %%eax");
+        emitInstruction(ctx, dstSize == 8 ? "cvttss2siq %%xmm0, %%rax"
+                                          : "cvttss2sil %%xmm0, %%eax");
         storeOp(ctx, "a", &inst->result);
+        return;
     }
-    // Double to Int
-    else if (srcType == IR_TYPE_DOUBLE && dstType == IR_TYPE_INT) {
+
+    // Double → Int
+    if (srcType == IR_TYPE_DOUBLE && !isFloatingPoint(dstType)) {
         loadOp(ctx, &inst->ar1, "%xmm0");
-        emitInstruction(ctx, "cvttsd2si %%xmm0, %%eax");
+        emitInstruction(ctx, dstSize == 8 ? "cvttsd2siq %%xmm0, %%rax"
+                                          : "cvttsd2sil %%xmm0, %%eax");
         storeOp(ctx, "a", &inst->result);
+        return;
     }
-    // Float to Double
-    else if (srcType == IR_TYPE_FLOAT && dstType == IR_TYPE_DOUBLE) {
+
+    // Float → Double
+    if (srcType == IR_TYPE_FLOAT && dstType == IR_TYPE_DOUBLE) {
         loadOp(ctx, &inst->ar1, "%xmm0");
         emitInstruction(ctx, "cvtss2sd %%xmm0, %%xmm0");
         storeOp(ctx, "%xmm0", &inst->result);
+        return;
     }
-    // Double to Float
-    else if (srcType == IR_TYPE_DOUBLE && dstType == IR_TYPE_FLOAT) {
+
+    // Double → Float
+    if (srcType == IR_TYPE_DOUBLE && dstType == IR_TYPE_FLOAT) {
         loadOp(ctx, &inst->ar1, "%xmm0");
         emitInstruction(ctx, "cvtsd2ss %%xmm0, %%xmm0");
         storeOp(ctx, "%xmm0", &inst->result);
+        return;
     }
-    // Bool to Int (or vice versa) - just copy
-    else {
-        genCopy(ctx, inst);
+
+    // Int width change
+    if (!isFloatingPoint(srcType) && !isFloatingPoint(dstType)) {
+        loadOp(ctx, &inst->ar1, "a");
+        if (dstSize > srcSize) {
+            int srcSigned = (srcType == IR_TYPE_I8  || srcType == IR_TYPE_I16 ||
+                            srcType == IR_TYPE_I32  || srcType == IR_TYPE_I64);
+            if (srcSigned) {
+                if      (srcSize == 1 && dstSize == 2) emitInstruction(ctx, "movsbw %%al,  %%ax");
+                else if (srcSize == 1 && dstSize == 4) emitInstruction(ctx, "movsbl %%al,  %%eax");
+                else if (srcSize == 1 && dstSize == 8) emitInstruction(ctx, "movsbq %%al,  %%rax");
+                else if (srcSize == 2 && dstSize == 4) emitInstruction(ctx, "movswl %%ax,  %%eax");
+                else if (srcSize == 2 && dstSize == 8) emitInstruction(ctx, "movswq %%ax,  %%rax");
+                else if (srcSize == 4 && dstSize == 8) emitInstruction(ctx, "movslq %%eax, %%rax");
+            } else {
+                if      (srcSize == 1 && dstSize == 2) emitInstruction(ctx, "movzbw %%al,  %%ax");
+                else if (srcSize == 1 && dstSize == 4) emitInstruction(ctx, "movzbl %%al,  %%eax");
+                else if (srcSize == 1 && dstSize == 8) emitInstruction(ctx, "movzbq %%al,  %%rax");
+                else if (srcSize == 2 && dstSize == 4) emitInstruction(ctx, "movzwl %%ax,  %%eax");
+                else if (srcSize == 2 && dstSize == 8) emitInstruction(ctx, "movzwq %%ax,  %%rax");
+                else if (srcSize == 4 && dstSize == 8) emitInstruction(ctx, "movl   %%eax, %%eax");
+            }
+        }
+        // truncation: loadOp already loaded the right width, nothing extra needed
+        storeOp(ctx, "a", &inst->result);
+        return;
     }
+
+    genCopy(ctx, inst);
 }
 
 void genComparison(CodeGenContext *ctx, IrInstruction *inst) {
@@ -782,14 +869,17 @@ void genComparison(CodeGenContext *ctx, IrInstruction *inst) {
                        getIntReg("a", type));
     }
     
+    int isUnsigned = (type == IR_TYPE_U8  || type == IR_TYPE_U16 ||
+                  type == IR_TYPE_U32 || type == IR_TYPE_U64);
+
     const char *setInst;
     switch (inst->op) {
         case IR_EQ: setInst = "sete"; break;
         case IR_NE: setInst = "setne"; break;
-        case IR_LT: setInst = isFloatingPoint(type) ? "setb" : "setl"; break;
-        case IR_LE: setInst = isFloatingPoint(type) ? "setbe" : "setle"; break;
-        case IR_GT: setInst = isFloatingPoint(type) ? "seta" : "setg"; break;
-        case IR_GE: setInst = isFloatingPoint(type) ? "setae" : "setge"; break;
+        case IR_LT: setInst = (isFloatingPoint(type) || isUnsigned) ? "setb"  : "setl"; break;
+        case IR_LE: setInst = (isFloatingPoint(type) || isUnsigned) ? "setbe" : "setle"; break;
+        case IR_GT: setInst = (isFloatingPoint(type) || isUnsigned) ? "seta"  : "setg"; break;
+        case IR_GE: setInst = (isFloatingPoint(type) || isUnsigned) ? "setae" : "setge"; break;
         default: setInst = "sete"; break;
     }
     

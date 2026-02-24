@@ -30,7 +30,16 @@ typedef enum {
 	TK_IMPORT,
 
 	// Data types
-	TK_INT,
+	// numeric
+	TK_I8,
+	TK_I16,
+	TK_I32,
+	TK_I64,
+	TK_U8,
+	TK_U16,
+	TK_U32,
+	TK_U64,
+
 	TK_STRING,
 	TK_FLOAT,
 	TK_BOOL,

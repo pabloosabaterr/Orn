@@ -1,0 +1,47 @@
+export fn itoa(n: i64, buf: *char, bufLen: i64) -> *char {
+    let MINUS: char = 45 as char; // ASCII '-'
+    let ZERO: char = 48 as char; // ASCII '0', digits are 48-57
+
+    if bufLen < 2 {
+        return null;
+    }
+
+    let i: i64 = bufLen - 1;
+    buf[i] = 0 as char; // last slot is null terminator
+    i = i - 1;
+
+    let neg: bool = false;
+    let un: u64;
+
+    // -(n+1) avoids overflow on INT64_MIN
+    if n < 0 {
+        neg = true;
+        un = (-(n + 1)) as u64 + 1;
+    } else {
+        un = n as u64;
+    }
+
+    // do-while substitute, guarantees at least one digit written (handles n=0)
+    let writing: bool = true;
+    while writing {
+        if i < 0 {
+            return null;
+        }
+        buf[i] = ((un % 10) + 48) as char;
+        un = un / 10;
+        i = i - 1;
+        if un == 0 {
+            writing = false;
+        }
+    }
+
+    if neg {
+        if i < 0 {
+            return null;
+        }
+        buf[i] = MINUS;
+        i = i - 1;
+    }
+
+    return &buf[i + 1];
+}

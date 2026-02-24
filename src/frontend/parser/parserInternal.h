@@ -119,6 +119,8 @@ ASTNode parseType(TokenList* list, size_t* pos);
 NodeTypes getDecType(const TokenType type);
 NodeTypes getTypeNodeFromToken(TokenType type);
 int isTypeToken(TokenType type);
+int isIntTypeToken(TokenType type);
+int isIntTypeNode(NodeTypes nodeType);
 
 /**
  * Operators

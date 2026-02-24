@@ -123,6 +123,8 @@ void reportError(ErrorCode code, ErrorContext *context, const char *extraContext
                levelColor, RESET_COLOR);
         exit(code);
     }
+
+    printf("%s", RESET_COLOR);
 }
 
 void printErrorSummary(void) {

@@ -42,6 +42,7 @@ static TokenType lookUpKeyword(const char * s, size_t len) {
 			break;
 		case 'c':
 			if(len == 5 && memcmp(s, "const", 5) == 0) return TK_CONST;
+			if(len == 4 && memcmp(s, "char", 4) == 0) return TK_I8; /* for now */
 			break;
 		case 'd': 
 			if (len == 6 && memcmp(s, "double", 6) == 0) return TK_DOUBLE;
@@ -60,7 +61,11 @@ static TokenType lookUpKeyword(const char * s, size_t len) {
 			}
 			break;
 		case 'i':
-			if (len == 3 && memcmp(s, "int", 3) == 0) return TK_INT;
+			if (len == 3 && memcmp(s, "int", 3) == 0) return TK_I32;
+			if(len == 2 && memcmp(s, "i8", 2) == 0) return TK_I8;
+			if(len == 3 && memcmp(s, "i16", 3) == 0) return TK_I16;
+			if(len == 3 && memcmp(s, "i32", 3) == 0) return TK_I32;
+			if(len == 3 && memcmp(s, "i64", 3) == 0) return TK_I64;
 			if (len == 2 && memcmp(s, "if", 2) == 0) return TK_IF;
 			if(len == 6 && memcmp(s, "import", 6) == 0) return TK_IMPORT;
 			break;
@@ -76,6 +81,12 @@ static TokenType lookUpKeyword(const char * s, size_t len) {
 			break;
 		case 't':
 			if (len == 4 && memcmp(s, "true", 4) == 0) return TK_TRUE;
+			break;
+		case 'u':
+			if(len == 2 && memcmp(s, "u8", 2) == 0) return TK_U8;
+			if(len == 3 && memcmp(s, "u16", 3) == 0) return TK_U16;
+			if(len == 3 && memcmp(s, "u32", 3) == 0) return TK_U32;
+			if(len == 3 && memcmp(s, "u64", 3) == 0) return TK_U64;
 			break;
 		case 'v':
 			if (len == 4 && memcmp(s, "void", 4) == 0) return TK_VOID;

@@ -6,8 +6,22 @@
 
 const char *dataTypeToString(DataType type) {
     switch (type) {
-    case TYPE_INT:
-        return "int";
+    case TYPE_I8:
+        return "i8";
+    case TYPE_I16:
+        return "i16";
+    case TYPE_I32:
+        return "i32";
+    case TYPE_I64:
+        return "i64";
+    case TYPE_U8:
+        return "u8";
+    case TYPE_U16:
+        return "u16";
+    case TYPE_U32:
+        return "u32";
+    case TYPE_U64:
+        return "u64";
     case TYPE_FLOAT:
         return "float";
     case TYPE_DOUBLE:
@@ -27,7 +41,14 @@ const char *dataTypeToString(DataType type) {
 
 DataType stringToDataType(const char *str) {
     if (!str) return TYPE_UNKNOWN;
-    if (strcmp(str, "int") == 0) return TYPE_INT;
+    if (strcmp(str, "i8") == 0) return TYPE_I8;
+    if (strcmp(str, "i16") == 0) return TYPE_I16;
+    if (strcmp(str, "i32") == 0) return TYPE_I32;
+    if (strcmp(str, "i64") == 0) return TYPE_I64;
+    if (strcmp(str, "u8") == 0) return TYPE_U8;
+    if (strcmp(str, "u16") == 0) return TYPE_U16;
+    if (strcmp(str, "u32") == 0) return TYPE_U32;
+    if (strcmp(str, "u64") == 0) return TYPE_U64;
     if (strcmp(str, "float") == 0) return TYPE_FLOAT;
     if (strcmp(str, "double") == 0) return TYPE_DOUBLE;
     if (strcmp(str, "string") == 0) return TYPE_STRING;

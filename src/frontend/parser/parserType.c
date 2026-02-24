@@ -13,7 +13,14 @@
 
 NodeTypes getDecType(TokenType type){
     switch(type){
-        case TK_INT:    return REF_INT;
+        case TK_I8:     return REF_I8;
+        case TK_I16:    return REF_I16;
+        case TK_I32:    return REF_I32;
+        case TK_I64:    return REF_I64;
+        case TK_U8:     return REF_U8;
+        case TK_U16:    return REF_U16;
+        case TK_U32:    return REF_U32;
+        case TK_U64:    return REF_U64;
         case TK_FLOAT:  return REF_FLOAT;
         case TK_DOUBLE: return REF_DOUBLE;
         case TK_BOOL:   return REF_BOOL;
@@ -24,8 +31,14 @@ NodeTypes getDecType(TokenType type){
 
 NodeTypes getTypeNodeFromToken(TokenType type){
     switch(type){
-        case TK_INT:    return REF_INT;
-        case TK_STRING: return REF_STRING;
+        case TK_I8:     return REF_I8;
+        case TK_I16:    return REF_I16;
+        case TK_I32:    return REF_I32;
+        case TK_I64:    return REF_I64;
+        case TK_U8:     return REF_U8;
+        case TK_U16:    return REF_U16;
+        case TK_U32:    return REF_U32;
+        case TK_U64:    return REF_U64;
         case TK_FLOAT:  return REF_FLOAT;
         case TK_BOOL:   return REF_BOOL;
         case TK_VOID:   return REF_VOID;
@@ -35,8 +48,37 @@ NodeTypes getTypeNodeFromToken(TokenType type){
     }
 }
 
+int isIntTypeToken(TokenType type){
+    return (type == TK_I8 ||
+            type == TK_I16 ||
+            type == TK_I32 ||
+            type == TK_I64 ||
+            type == TK_U8 ||
+            type == TK_U16 ||
+            type == TK_U32 ||
+            type == TK_U64);
+}
+
+int isIntTypeNode(NodeTypes nodeType){
+    return (nodeType == REF_I8 ||
+            nodeType == REF_I16 ||
+            nodeType == REF_I32 ||
+            nodeType == REF_I64 ||
+            nodeType == REF_U8 ||
+            nodeType == REF_U16 ||
+            nodeType == REF_U32 ||
+            nodeType == REF_U64);
+}
+
 int isTypeToken(TokenType type){
-    return (type == TK_INT ||
+    return (type == TK_I8 ||
+            type == TK_I16 ||
+            type == TK_I32 ||
+            type == TK_I64 ||
+            type == TK_U8 ||
+            type == TK_U16 ||
+            type == TK_U32 ||
+            type == TK_U64 ||
             type == TK_STRING ||
             type == TK_FLOAT ||
             type == TK_BOOL ||

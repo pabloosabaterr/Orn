@@ -68,7 +68,7 @@ int validateArrayAccessNode(ASTNode arrayAccess, TypeCheckContext context) {
         return 0;
     }
 
-    if (indexType != TYPE_INT) {
+    if (!isIntegerType(indexType)) {
         REPORT_ERROR(ERROR_ARRAY_INDEX_NOT_INTEGER, indexNode, context, "Array index must be integer type");
         return 0;
     }
@@ -277,12 +277,18 @@ StructType createStructType(ASTNode node, TypeCheckContext context) {
     structType->fieldCount = 0;
     structType->size = 0;
 
+    Symbol selfSym = lookupSymbolCurrentOnly(context->current, node->start, node->length);
+    if(selfSym){
+        selfSym->structType = structType;
+    }
+
     ASTNode fieldList = node->children;
     if (fieldList && fieldList->nodeType == STRUCT_FIELD_LIST) {
         ASTNode field = fieldList->children;
         StructField last = NULL;
 
         while (field) {
+            /* todo: bring struct field validation logic to his own function */
             if (field->nodeType == STRUCT_FIELD && field->children) {
                 StructField structField = malloc(sizeof(struct StructField));
                 if (!structField) {
@@ -297,7 +303,7 @@ StructType createStructType(ASTNode node, TypeCheckContext context) {
                 structField->nameLength = field->length;
                 structField->type = type;
                 if (type == TYPE_STRUCT) {
-                    Symbol structSymbol = lookupSymbol(context->current, field->children->start, field->children->length);
+                    Symbol structSymbol = lookupSymbol(context->current, field->children->children->start, field->children->children->length);
                     if (!structSymbol || structSymbol->symbolType != SYMBOL_TYPE) {
                         REPORT_ERROR(ERROR_UNDEFINED_SYMBOL, field->children, context, "Undefined struct type in field declaration");
                         free(structField);
@@ -305,6 +311,13 @@ StructType createStructType(ASTNode node, TypeCheckContext context) {
                         return NULL;
                     }
                     structField->structType = structSymbol->structType;
+
+                    if(pointerLevel == 0 && structSymbol->structType == structType){
+                        REPORT_ERROR(ERROR_INVALID_EXPRESSION, field->children, context, "Struct cannot contain itself directly");
+                        free(structField);
+                        free(structType);
+                        return NULL;
+                    }
                 }
                 structField->isPointer = (pointerLevel > 0);
                 structField->pointerLevel = pointerLevel;
@@ -362,18 +375,20 @@ int validateStructDef(ASTNode node, TypeCheckContext context) {
         free(tempText);
         return 0;
     }
+
+    Symbol structSymbol = addSymbolFromNode(context->current, node, TYPE_STRUCT);
+    if(!structSymbol) return 0;
+
+    structSymbol->symbolType = SYMBOL_TYPE;
+    structSymbol->structType = NULL;
+
     StructType structType = createStructType(node, context);
     if (!structType) {
         REPORT_ERROR(ERROR_INVALID_EXPRESSION, node, context, "Failed to create struct type");
         return 0;
     };
-    Symbol structSymbol = addSymbolFromNode(context->current, node, TYPE_STRUCT);
-    if (!structSymbol) {
-        free(structType);
-        return 0;
-    }
+    
     structSymbol->structType = structType;
-    structSymbol->symbolType = SYMBOL_TYPE;
     return 1;
 }
 
@@ -1142,7 +1157,8 @@ int validateReturnStatement(ASTNode node, TypeCheckContext context) {
 
     /* Special handling for pointer returns */
     if (expectedType == TYPE_POINTER || returnType == TYPE_POINTER) {
-        if (expectedType != TYPE_POINTER || returnType != TYPE_POINTER) {
+        CompatResult compat = areCompatible(expectedType, returnType);
+        if (compat == COMPAT_ERROR) {
             repError(ERROR_RETURN_TYPE_MISMATCH, "Cannot return pointer from non-pointer function or vice versa");
             return 0;
         }

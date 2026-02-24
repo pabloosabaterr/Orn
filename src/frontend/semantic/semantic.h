@@ -29,7 +29,14 @@ struct Symbol;
 typedef struct Symbol *Symbol;
 
 typedef enum {
-    TYPE_INT,
+    TYPE_I8,
+    TYPE_I16,
+    TYPE_I32,
+    TYPE_I64,
+    TYPE_U8,
+    TYPE_U16,
+    TYPE_U32,
+    TYPE_U64,
     TYPE_FLOAT,
     TYPE_DOUBLE,
     TYPE_STRING,
@@ -62,6 +69,7 @@ typedef enum {
     BUILTIN_EXIT,
     BUILTIN_READ_INT,
     BUILTIN_READ_STRING,
+    BUILTIN_SYSCALL,
     BUILTIN_UNKNOWN
 } BuiltInId;
 
@@ -204,6 +212,8 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context);
 ErrorCode variableErrorCompatibleHandling(DataType varType, DataType initType);
 const char *getTypeName(DataType type);
 int getStackSize(DataType type);
+int isIntegerType(DataType type);
+int isSignedInt(DataType type);
 
 /* Scope management */
 

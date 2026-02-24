@@ -66,6 +66,8 @@ typedef struct {
     int totalOffset;
     StructType finalStructType;
     DataType fieldType;
+    int baseIsTemp; // comes from a temp variable e.g.: auto dereference of a struct pointer
+    int baseTempNum;
 } MemberAccessInfo;
 
 typedef enum {
@@ -78,7 +80,14 @@ typedef enum {
 } OperandType;
 
 typedef enum {
-    IR_TYPE_INT,
+    IR_TYPE_I8,
+    IR_TYPE_I16,
+    IR_TYPE_I32,
+    IR_TYPE_I64,
+    IR_TYPE_U8,
+    IR_TYPE_U16,
+    IR_TYPE_U32,
+    IR_TYPE_U64,
     IR_TYPE_FLOAT,
     IR_TYPE_DOUBLE,
     IR_TYPE_BOOL,
@@ -100,7 +109,7 @@ typedef struct IrOperand {
         } var;
         struct {
             union {
-                int intVal;
+                int64_t intVal;
                 float floatVal;
                 double doubleVal;
                 struct {
@@ -155,7 +164,7 @@ void freeIrContext(IrContext *ctx);
 IrOperand createTemp(IrContext *ctx, IrDataType type);
 IrOperand createVar(const char *name, size_t len, IrDataType type);
 IrOperand createConst(IrDataType type);
-IrOperand createIntConst(int val);
+IrOperand createSizedIntConst(int64_t val, IrDataType type);
 IrOperand createFloatConst(float val);
 IrOperand createDoubleConst(double val);
 IrOperand createBoolConst(int val);

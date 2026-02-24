@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "lexer.h"
 #include "codegen.h"
@@ -100,16 +101,19 @@ char **extractImports(ASTNode ast, int *count){
 
 char *resolveModulePath(const char *basePath, const char *moduleName){
     size_t len = strlen(basePath) + 1 + strlen(moduleName) + 4 + 1;
-    char *fullPath = malloc(len);
-    if(fullPath){
-        snprintf(fullPath, len, "%s/%s.orn", basePath, moduleName);
-    }
-    return fullPath;
+    char *rawPath = malloc(len);
+    if(!rawPath) return NULL;
+    
+    snprintf(rawPath, len, "%s/%s.orn", basePath, moduleName);
+
+    char* resolved = realpath(rawPath, NULL);
+    free(rawPath);
+    return resolved;
 }
 
-Module *findModule(BuildContext *ctx, const char *name){
+Module *findModule(BuildContext *ctx, const char *path){
     for(int i=0;i<ctx->moduleCount; ++i){
-        if(strcmp(ctx->modules[i].name, name)==0){
+        if(strcmp(ctx->modules[i].path, path)==0){
             return &ctx->modules[i];
         }
     }
@@ -117,7 +121,7 @@ Module *findModule(BuildContext *ctx, const char *name){
 }
 
 static Module *addModule(BuildContext *ctx, const char *name, const char *path){
-    Module *existing = findModule(ctx, name);
+    Module *existing = findModule(ctx, path);
     if(existing) return existing;
     if(ctx->moduleCount >= ctx->moduleCapacity){
         int newCap = ctx->moduleCapacity == 0 ? 8 : ctx->moduleCapacity * 2;
@@ -141,8 +145,17 @@ static Module *addModule(BuildContext *ctx, const char *name, const char *path){
 static int findModulesRec(BuildContext *ctx, const char *path){
     char *name = extractModuleName(path);
     if(!name) return 0;
-    if(findModule(ctx, name)){
+
+    char* resPath = realpath(path, NULL);
+    if(!resPath){
+        fprintf(stderr, "Error: Cannot resolve path '%s'\n", path);
         free(name);
+        return 0;
+    }
+    
+    if(findModule(ctx, resPath)){
+        free(name);
+        free(resPath);
         return 1;
     }
 
@@ -150,14 +163,16 @@ static int findModulesRec(BuildContext *ctx, const char *path){
     if (!source) {
         fprintf(stderr, "Error: Cannot read module '%s' at '%s'\n", name, path);
         free(name);
+        free(resPath);
         return 0;
     }
 
-    TokenList *tokens = lex(source, path);
+    TokenList *tokens = lex(source, resPath);
     if (!tokens) {
         fprintf(stderr, "Error: Failed to lex module '%s'\n", name);
         free(source);
         free(name);
+        free(resPath);
         return 0;
     }
 
@@ -167,21 +182,26 @@ static int findModulesRec(BuildContext *ctx, const char *path){
         freeTokens(tokens);
         free(source);
         free(name);
+        free(resPath);
         return 0;
     }
 
-    Module *mod = addModule(ctx, name, path);
+    Module *mod = addModule(ctx, name, resPath);
     if(!mod){
         fprintf(stderr, "Error: Failed to add module '%s'\n", name);
         freeASTContext(ast);
         freeTokens(tokens);
         free(source);
         free(name);
+        free(resPath);
         return 0;
     }
 
     int importCount;
     char **imports = extractImports(ast->root, &importCount);
+
+    char* basePath = extractBasePath(resPath);
+    
     for(int i = 0; i<importCount; ++i){
         if(mod->importCount >= mod->importCapacity){
             int newCap = mod->importCapacity == 0 ? 4 : mod->importCapacity * 2;
@@ -192,15 +212,30 @@ static int findModulesRec(BuildContext *ctx, const char *path){
                 freeTokens(tokens);
                 free(source);
                 free(name);
+                free(resPath);
+                free(basePath);
                 return 0;
             }
 
             mod->imports = newImports;
             mod->importCapacity = newCap;
         }
-        mod->imports[mod->importCount++] = imports[i];
 
-        char *importPath = resolveModulePath(ctx->basePath, imports[i]);
+        char *importPath = resolveModulePath(basePath, imports[i]);
+        if(!importPath){
+            fprintf(stderr, "Error: Failed to resolve import '%s' for module '%s'\n", imports[i], name);
+            free(imports);
+            freeASTContext(ast);
+            freeTokens(tokens);
+            free(source);
+            free(name);
+            free(resPath);
+            free(basePath);
+            return 0;
+        }
+        mod->imports[mod->importCount++] = strdup(importPath);  // store resolved path
+        free(imports[i]);
+
         if(!findModulesRec(ctx, importPath)){
             fprintf(stderr, "Error: Failed to process import '%s' for module '%s'\n", imports[i], name);
             free(importPath);
@@ -209,11 +244,14 @@ static int findModulesRec(BuildContext *ctx, const char *path){
             freeTokens(tokens);
             free(source);
             free(name);
+            free(resPath);
+            free(basePath);
             return 0;
         }
         free(importPath);
     }
 
+    free(basePath);
     free(imports);
     freeASTContext(ast);
     freeTokens(tokens);
@@ -266,7 +304,7 @@ int *topoSortModules(BuildContext *ctx, int *outCount) {
         for (int i = 0; i < n; i++) {
             Module *mod = &ctx->modules[i];
             for (int j = 0; j < mod->importCount; j++) {
-                if (strcmp(mod->imports[j], ctx->modules[curr].name) == 0) {
+                if (strcmp(mod->imports[j], ctx->modules[curr].path) == 0) {
                     inDegree[i]--;
                     if (inDegree[i] == 0) {
                         queue[qTail++] = i;
@@ -399,6 +437,9 @@ static int compileModule(BuildContext *ctx, Module *mod, int optLevel,
         free(source);
         return 0;
     }
+
+    /* for debug */
+    // printf("%s\n", assembly);
     
     // Write assembly file
     char asmPath[512];

@@ -30,6 +30,8 @@ DataType validateMemberAccess(ASTNode node, TypeCheckContext context);
 int isPrecisionLossCast(DataType source, DataType target);
 int isNumType(DataType type);
 CompatResult isCastAllowed(DataType target, DataType source);
+int isUnsignedInt(DataType type);
+int getIntegerRank(DataType type);
 
 /* symbol helpers */
 
