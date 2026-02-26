@@ -484,14 +484,14 @@ static void generateFunctionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
             paramIndex++;
         }
     }
-    generateStatementIr(ctx, body, typeCtx);
+    generateStatementIr(ctx, body, typeCtx, symbolTypeToNodeType(fnSymbol->type));
     
     emitBinary(ctx, IR_FUNC_END, funcName, none, none);
     typeCtx->currentFunction = oldFunction;
     typeCtx->current = oldScope;
 }
 
-IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx){
+IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx, NodeTypes expectedType) {
     if(!node) return createNone();
     switch (node->nodeType){
 
@@ -567,10 +567,10 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         ASTNode right = left ? left->brothers : NULL;
         if (!left || !right) return createNone();
 
-        IrOperand leftOp = generateExpressionIr(ctx, left, typeCtx);
-        IrOperand rightOp = generateExpressionIr(ctx, right, typeCtx);
+        IrOperand leftOp = generateExpressionIr(ctx, left, typeCtx, expectedType);
+        IrOperand rightOp = generateExpressionIr(ctx, right, typeCtx, expectedType);
 
-        IrDataType resultType = symbolTypeToIrType(getExpressionType(node, typeCtx));
+        IrDataType resultType = symbolTypeToIrType(getExpressionType(node, typeCtx, expectedType));
 
         IrOperand res = createTemp(ctx, resultType);
         IrOpCode op = astOpToIrOp(node->nodeType);
@@ -582,7 +582,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
     case LOGIC_NOT:
     case BITWISE_NOT: {
         ASTNode operand = node->children;
-        IrOperand operandOp = generateExpressionIr(ctx, operand, typeCtx);
+        IrOperand operandOp = generateExpressionIr(ctx, operand, typeCtx, expectedType);
         IrOperand res = createTemp(ctx, operandOp.dataType);
 
         IrOpCode irOp = astOpToIrOp(node->nodeType);
@@ -620,7 +620,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
             ASTNode arrNode = target->children;
             ASTNode indexNode = arrNode->brothers;
             
-            IrOperand indexOp = generateExpressionIr(ctx, indexNode, typeCtx);
+            IrOperand indexOp = generateExpressionIr(ctx, indexNode, typeCtx, REF_I32);
             Symbol arraySym = lookupSymbol(typeCtx->current, arrNode->start, arrNode->length);
             if (!arraySym) return createNone();
             
@@ -648,7 +648,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         if (!ptrNode) return createNone();
 
         // Generate the pointer expression
-        IrOperand ptrOp = generateExpressionIr(ctx, ptrNode, typeCtx);
+        IrOperand ptrOp = generateExpressionIr(ctx, ptrNode, typeCtx, expectedType);
 
         // Determine the type of the dereferenced value
         Symbol ptrSym = NULL;
@@ -669,7 +669,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
     case PRE_INCREMENT:
     case PRE_DECREMENT: {
         ASTNode operand = node->children;
-        IrOperand var = generateExpressionIr(ctx, operand, typeCtx);
+        IrOperand var = generateExpressionIr(ctx, operand, typeCtx, REF_I32);
         
         IrOperand one;
         if (var.dataType == IR_TYPE_FLOAT) {
@@ -692,7 +692,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
     case POST_INCREMENT:
     case POST_DECREMENT: {
         ASTNode operand = node->children;
-        IrOperand var = generateExpressionIr(ctx, operand, typeCtx);
+        IrOperand var = generateExpressionIr(ctx, operand, typeCtx, REF_I32);
         IrOperand oldValue = createTemp(ctx, var.dataType);
         emitCopy(ctx, oldValue, var);
         
@@ -725,7 +725,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         if (argList && argList->nodeType == ARGUMENT_LIST) {
             ASTNode arg = argList->children;
             while (arg) {
-                IrOperand argOp = generateExpressionIr(ctx, arg, typeCtx);
+                IrOperand argOp = generateExpressionIr(ctx, arg, typeCtx, funcSymbol->parameters + paramCount);
                 IrOperand none = createNone();
                 emitBinary(ctx, IR_PARAM, none, argOp, none);
                 paramCount++;
@@ -753,18 +753,19 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         ASTNode left = node->children;
         ASTNode right = left ? left->brothers : NULL;
         if (!left || !right) return createNone();
-
-        IrOperand rightOp = generateExpressionIr(ctx, right, typeCtx);
+        Symbol leftSym = lookupSymbol(typeCtx->current, left->children->start, left->children->length);
+        NodeTypes leftTypeExpected = left->nodeType;
+        IrOperand rightOp = generateExpressionIr(ctx, right, typeCtx, leftTypeExpected);
         IrOperand leftOp;
 
         if (left->nodeType == ARRAY_ACCESS) {
-            leftOp = generateExpressionIr(ctx, left->children, typeCtx);
+            leftOp = generateExpressionIr(ctx, left->children, typeCtx, leftSym->type);
             ASTNode target = left->children->brothers;
-            emitPointerStore(ctx, leftOp, generateExpressionIr(ctx, target, typeCtx), rightOp);
+            emitPointerStore(ctx, leftOp, generateExpressionIr(ctx, target, typeCtx, leftSym->type), rightOp);
         } else if (left->nodeType == POINTER) {
             // Handle *ptr = value
             ASTNode ptrNode = left->children;
-            IrOperand ptrOp = generateExpressionIr(ctx, ptrNode, typeCtx);
+            IrOperand ptrOp = generateExpressionIr(ctx, ptrNode, typeCtx, leftSym->type);
 
             emitStore(ctx, ptrOp, rightOp);
 
@@ -799,7 +800,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
                 emitMemberStore(ctx, base, info.totalOffset, rightOp);
             }
         }else {
-            leftOp = generateExpressionIr(ctx, left, typeCtx);
+            leftOp = generateExpressionIr(ctx, left, typeCtx, leftSym->type);
             if (node->nodeType != ASSIGNMENT) {
                 IrDataType resultType = leftOp.dataType;
                 IrOperand temp = createTemp(ctx, resultType);
@@ -822,7 +823,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
         ASTNode sourceExpr = node->children;
         ASTNode targetType = sourceExpr->brothers;
 
-        IrOperand source = generateExpressionIr(ctx, sourceExpr, typeCtx);
+        IrOperand source = generateExpressionIr(ctx, sourceExpr, typeCtx, targetType->nodeType);
         IrDataType target = nodeTypeToIrType(targetType->nodeType);
 
         IrOperand res = createTemp(ctx, target);
@@ -833,7 +834,7 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
     case ARRAY_ACCESS:{
         ASTNode arrNode = node->children;
         ASTNode index = arrNode->brothers;
-        IrOperand indexOp = generateExpressionIr(ctx, index, typeCtx);
+        IrOperand indexOp = generateExpressionIr(ctx, index, typeCtx, REF_I32);
 
         Symbol arraySym = lookupSymbol(typeCtx->current, arrNode->start, arrNode->length);
         IrDataType elemType = symbolTypeToIrType(arraySym->type);
@@ -850,12 +851,12 @@ IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext ty
 }
 
 
-void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx){
+void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx, NodeTypes expectedType) {
     switch(node->nodeType){
         case PROGRAM: {
             ASTNode child = node->children;
             while(child){
-                generateStatementIr(ctx, child, typeCtx);
+                generateStatementIr(ctx, child, typeCtx, expectedType);
                 child = child->brothers;
             }
             break;
@@ -874,7 +875,7 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
             
             ASTNode child = node->children;
             while(child){
-                generateStatementIr(ctx, child, typeCtx);
+                generateStatementIr(ctx, child, typeCtx, expectedType);
                 child = child->brothers;
             }
             
@@ -903,7 +904,7 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
                 
                 if (varDef->children && varDef->children->brothers) {
                     ASTNode initValue = varDef->children->brothers->children;
-                    IrOperand srcOp = generateExpressionIr(ctx, initValue, typeCtx);
+                    IrOperand srcOp = generateExpressionIr(ctx, initValue, typeCtx, sym->type);
                     
                     if(varDef->children->brothers->children->nodeType != FUNCTION_CALL){
                         StructField field = sym->structType->fields;
@@ -916,13 +917,15 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
                     }
                 }
                 }else{
-                    generateStatementIr(ctx, node->children, typeCtx);
+                    generateStatementIr(ctx, node->children, typeCtx, expectedType);
                 }
             }
             break;
         case VAR_DEFINITION: {
             if (node->children && node->children->brothers) {
-                IrOperand val = generateExpressionIr(ctx, node->children->brothers->children, typeCtx);
+                Symbol sym = lookupSymbol(typeCtx->current, node->children->start, node->children->length);
+                assert(sym && "Variable symbol should exist in symbol table at this point");
+                IrOperand val = generateExpressionIr(ctx, node->children->brothers->children, typeCtx, sym->type);
 
                 ASTNode typeRefChild = node->children->children;
                 IrDataType type;
@@ -939,6 +942,7 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
         }
         case ARRAY_VARIABLE_DEFINITION:{
             if(node->children){
+                // todo: use symbol table instead of node values, even if ast is supposed to be correct after sem pass
                 ASTNode typeref = node->children;
                 IrDataType type = nodeTypeToIrType(typeref->children->nodeType);
                 ASTNode staticSizeNode = typeref->brothers;
@@ -957,13 +961,13 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
                     if (valNode->children->nodeType == ARRAY_LIT) {
                         ASTNode arrLitVal = valNode->children->children;
                         for (int i = 0; i < staticSize; ++i) {
-                            IrOperand val = generateExpressionIr(ctx, arrLitVal, typeCtx);
+                            IrOperand val = generateExpressionIr(ctx, arrLitVal, typeCtx, type);
                             IrOperand off = createSizedIntConst(i, IR_TYPE_I32);
                             emitPointerStore(ctx, arr, off, val);
                             arrLitVal = arrLitVal->brothers;
                         }
                     } else {
-                        emitCopy(ctx, arr, generateExpressionIr(ctx, valNode->children, typeCtx));
+                        emitCopy(ctx, arr, generateExpressionIr(ctx, valNode->children, typeCtx, type));
                     }
                 }
             }
@@ -978,7 +982,7 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
             int elseLab = ctx->nextLabelNum++;
             int endLab = ctx->nextLabelNum++;
 
-            IrOperand condOp = generateExpressionIr(ctx, cond, typeCtx);
+            IrOperand condOp = generateExpressionIr(ctx, cond, typeCtx, REF_BOOL);
 
             if(elseBranchWrap){
                 emitIfFalse(ctx, condOp, elseLab);
@@ -986,11 +990,11 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
                 emitIfFalse(ctx, condOp, endLab);
             }
 
-            generateStatementIr(ctx, trueBranchWrap->children, typeCtx);
+            generateStatementIr(ctx, trueBranchWrap->children, typeCtx, REF_VOID);
             if(elseBranchWrap){
                 emitGoto(ctx, endLab);
                 emitLabel(ctx, elseLab);
-                generateStatementIr(ctx, elseBranchWrap->children, typeCtx);
+                generateStatementIr(ctx, elseBranchWrap->children, typeCtx, REF_VOID);
             }
             emitLabel(ctx, endLab);
             break;
@@ -1005,9 +1009,9 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
 
             emitLabel(ctx, startLab);
 
-            IrOperand condOp = generateExpressionIr(ctx, cond, typeCtx);
+            IrOperand condOp = generateExpressionIr(ctx, cond, typeCtx, REF_BOOL);
             emitIfFalse(ctx, condOp, endLab);
-            generateStatementIr(ctx, body, typeCtx);
+            generateStatementIr(ctx, body, typeCtx, REF_VOID);
             emitGoto(ctx, startLab);
             emitLabel(ctx, endLab);
 
@@ -1016,7 +1020,7 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
 
         case RETURN_STATEMENT: {
             if (node->children && typeCtx->currentFunction->type != TYPE_STRUCT) {
-                IrOperand retVal = generateExpressionIr(ctx, node->children, typeCtx);
+                IrOperand retVal = generateExpressionIr(ctx, node->children, typeCtx, typeCtx->currentFunction->type);
                 emitReturn(ctx, retVal);
             } else {
                 IrOperand none = createNone();
@@ -1038,14 +1042,14 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx)
         }
 
 
-        default: generateExpressionIr(ctx, node, typeCtx);
+        default: generateExpressionIr(ctx, node, typeCtx, expectedType);
     }
 }
 
 IrContext *generateIr(ASTNode ast, TypeCheckContext typeCtx){
     IrContext *ctx = createIrContext();
     if(!ctx)  return NULL;
-    generateStatementIr(ctx, ast, typeCtx);
+    generateStatementIr(ctx, ast, typeCtx, REF_VOID);
     return ctx;
 }
 

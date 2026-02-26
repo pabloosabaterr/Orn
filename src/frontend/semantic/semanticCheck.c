@@ -62,7 +62,7 @@ int validateArrayAccessNode(ASTNode arrayAccess, TypeCheckContext context) {
     ASTNode indexNode = baseNode->brothers;
     if (!indexNode) return 1;
 
-    DataType indexType = getExpressionType(indexNode, context);
+    DataType indexType = getExpressionType(indexNode, context, TYPE_I32);
     if (indexType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_ARRAY_INDEX_INVALID_EXPR, indexNode, context, "Invalid array index expression");
         return 0;
@@ -93,7 +93,7 @@ int validateArrayLiteralInit(ASTNode arrLitNode, DataType expectedType, int expe
     ASTNode elem = arrLitNode->children;
 
     while (elem) {
-        DataType elemType = getExpressionType(elem, context);
+        DataType elemType = getExpressionType(elem, context, expectedType);
         CompatResult compat = areCompatible(expectedType, elemType);
 
         if (elemType == TYPE_UNKNOWN || compat == COMPAT_ERROR) {
@@ -432,9 +432,7 @@ int validateStructVarDec(ASTNode node, TypeCheckContext context) {
 /* scalars */
 
 
-int validateScalarInitialization(Symbol newSymbol, ASTNode node,
-                                 DataType varType, int isConst, int isMemRef,
-                                 TypeCheckContext context) {
+int validateScalarInitialization(Symbol newSymbol, ASTNode node, DataType varType, int isConst, int isMemRef, TypeCheckContext context) {
     ASTNode initExprForType = node->children->brothers->children;
     ASTNode initExpr = isMemRef ?
         node->children->brothers->children->children :
@@ -455,7 +453,8 @@ int validateScalarInitialization(Symbol newSymbol, ASTNode node,
         updateConstMemRef(newSymbol, initExpr, context);
     }
 
-    DataType initType = getExpressionType(initExprForType, context);
+    printf("varType: %d, symbolType: %d\n", varType, newSymbol->type);
+    DataType initType = getExpressionType(initExprForType, context, varType);
     if (initType == TYPE_UNKNOWN) {
         reportErrorWithText(ERROR_INTERNAL_TYPECHECKER_ERROR, node, context,
                           "Cannot determine initialization type");
@@ -688,8 +687,9 @@ int validateAssignment(ASTNode node, TypeCheckContext context) {
     }
 
     /* Handle variable assignment */
+    Symbol sym = NULL;
     if (left->nodeType == VARIABLE) {
-        Symbol sym = lookupSymbolOrError(context, left);
+        sym = lookupSymbolOrError(context, left);
         if (!sym) return 0;
 
         if (sym->symbolType == SYMBOL_FUNCTION) {
@@ -745,13 +745,13 @@ int validateAssignment(ASTNode node, TypeCheckContext context) {
     }
 
     /* Type compatibility checking */
-    DataType leftType = getExpressionType(leftForType, context);
+    DataType leftType = getExpressionType(leftForType, context, sym->type); /* expected type on assignement is unecesary because its never going to be a unresolved type */
     if (leftType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_EXPRESSION_TYPE_UNKNOWN_LHS, leftForType, context, "Cannot determine type of left-hand side");
         return 0;
     }
 
-    DataType rightType = getExpressionType(rightForType, context);
+    DataType rightType = getExpressionType(rightForType, context, leftType);
     if (rightType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_EXPRESSION_TYPE_UNKNOWN_RHS, rightForType, context, "Cannot determine type of right-hand side");
         return 0;
@@ -989,7 +989,7 @@ int validateFunctionDef(ASTNode node, TypeCheckContext context) {
             REPORT_ERROR(ERROR_MISSING_RETURN_VALUE, node, context, "Non-void function missing return statement");
             success = 0;
         } else {
-            success = typeCheckNode(bodyNode, context);
+            success = typeCheckNode(bodyNode, context, returnType);
         }
     }
 
@@ -1038,7 +1038,7 @@ int validateBuiltinFunctionCall(ASTNode node, TypeCheckContext context) {
 
         arg = argListNode->children;
         for (int i = 0; i < argCount && arg != NULL; i++) {
-            DataType argType = getExpressionType(arg, context);
+            DataType argType = getExpressionType(arg, context, TYPE_I32); // I32 placeholder for testing ?
             if (argType == TYPE_UNKNOWN) {
                 free(argTypes);
                 return 0;
@@ -1097,7 +1097,7 @@ int validateUserDefinedFunctionCall(ASTNode node, TypeCheckContext context) {
     arg = argListNode->children;
 
     while (param != NULL && arg != NULL) {
-        DataType argType = getExpressionType(arg, context);
+        DataType argType = getExpressionType(arg, context, param->type);
         if (argType == TYPE_UNKNOWN) {
             return 0;
         }
@@ -1144,7 +1144,7 @@ int validateReturnStatement(ASTNode node, TypeCheckContext context) {
     }
 
     /* Get actual return type */
-    DataType returnType = getExpressionType(node->children, context);
+    DataType returnType = getExpressionType(node->children, context, expectedType);
     if (returnType == TYPE_UNKNOWN) {
         return 0;
     }
@@ -1212,9 +1212,9 @@ int validateCastExpression(ASTNode node, TypeCheckContext context) {
     }
     ASTNode sourceExpr = node->children;
     ASTNode targetTypeNode = node->children->brothers;
-    DataType sourceType = getExpressionType(sourceExpr, context);
-    if (sourceType == TYPE_UNKNOWN) return 0;
     DataType targetType = getDataTypeFromNode(targetTypeNode->nodeType);
+    DataType sourceType = getExpressionType(sourceExpr, context, targetType);
+    if (sourceType == TYPE_UNKNOWN) return 0;
     if (targetType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_INVALID_CAST_TARGET, node, context, "Invalid cast target type");
         return 0;

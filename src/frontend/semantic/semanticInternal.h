@@ -2,7 +2,7 @@
  * @file semanticInternal.h
  * @brief Internal shared header for semantic analysis modules.
  *
- * This header is included ONLY by semantic/*.c files.
+ * This header is included ONLY by semantic.c files.
  * It must NEVER be included outside the semantic/ directory.
  *
  * Contains internal function prototypes and helper declarations.

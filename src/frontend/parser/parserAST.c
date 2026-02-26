@@ -97,6 +97,7 @@ static const NodeTypeMap nodeTypeMapping[] = {
     {REF_U16,               "TYPE_U16"},
     {REF_U32,               "TYPE_U32"},
     {REF_U64,               "TYPE_U64"},
+    {REF_INT_UNRESOLVED,     "TYPE_INT_UNRESOLVED"},
     {REF_STRING,             "TYPE_STRING"},
     {REF_FLOAT,              "TYPE_FLOAT"},
     {REF_BOOL,               "TYPE_BOOL"},
@@ -156,49 +157,6 @@ static int containsFChar(const char *val, size_t i, int hasDot, size_t len) {
     return (val[i] == 'f' || val[i] == 'F') && i == len - 1 && hasDot;
 }
 
-static NodeTypes classifyIntLiteral(const char *val, size_t len) {
-    int isUnsigned = 0;
-    int isLong = 0;
-    size_t numLen = len;
-
-    if (numLen >= 2) {
-        const char *end = val + numLen - 2;
-        if (memcmp(end, "ul", 2) == 0 || memcmp(end, "lu", 2) == 0 ||
-            memcmp(end, "UL", 2) == 0 || memcmp(end, "LU", 2) == 0) {
-            isUnsigned = 1;
-            isLong = 1;
-            numLen -= 2;
-        }
-    }
-    if (!isLong && !isUnsigned && numLen >= 1) {
-        char last = val[numLen - 1];
-        if      (last == 'u' || last == 'U') { isUnsigned = 1; numLen--; }
-        else if (last == 'l' || last == 'L') { isLong = 1;     numLen--; }
-    }
-
-    char buf[64];
-    memcpy(buf, val, numLen);
-    buf[numLen] = '\0';
-
-    if (isLong)
-        return isUnsigned ? REF_U64 : REF_I64;
-
-    if (isLong)
-    return isUnsigned ? REF_U64 : REF_I64;
-
-    if (isUnsigned) {
-        unsigned long long n = strtoull(buf, NULL, 10);
-        if (n <= UINT8_MAX)  return REF_U8;
-        if (n <= UINT16_MAX) return REF_U16;
-        if (n <= UINT32_MAX) return REF_U32;
-        return REF_U64;
-    }
-
-    long long n = strtoll(buf, NULL, 10);
-    if (n >= INT32_MIN && n <= INT32_MAX) return REF_I32;
-    return REF_I64;
-}
-
 /**
  * @brief Classifies a token as a specific literal type (int, float, string, bool, variable, etc.)
  */
@@ -242,7 +200,7 @@ NodeTypes detectLitType(const Token *tok, TokenList *list, size_t *pos) {
             if (containsFChar(val, len - 1, hasDot, len)) return REF_FLOAT;
             return REF_DOUBLE;
         }
-        return classifyIntLiteral(val, len);
+        return REF_INT_UNRESOLVED; // int type will be resolved on semantic based on suffix and left side type
     }
 
     /* Identifier / variable */

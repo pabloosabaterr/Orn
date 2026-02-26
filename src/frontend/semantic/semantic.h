@@ -208,12 +208,13 @@ DataType getDataTypeFromNode(NodeTypes nodeType);
 
 CompatResult areCompatible(DataType target, DataType source);
 DataType getOperationResultType(DataType left, DataType right, NodeTypes op);
-DataType getExpressionType(ASTNode node, TypeCheckContext context);
+DataType getExpressionType(ASTNode node, TypeCheckContext context, DataType expectedType);
 ErrorCode variableErrorCompatibleHandling(DataType varType, DataType initType);
 const char *getTypeName(DataType type);
 int getStackSize(DataType type);
 int isIntegerType(DataType type);
 int isSignedInt(DataType type);
+NodeTypes symbolTypeToNodeType(DataType type);
 
 /* Scope management */
 
@@ -231,8 +232,8 @@ int isBuiltinFunction(const char *nameStart, size_t nameLength);
 int validateVariableDeclaration(ASTNode node, TypeCheckContext context, int isConst);
 int validateAssignment(ASTNode node, TypeCheckContext context);
 int validateVariableUsage(ASTNode node, TypeCheckContext context);
-int typeCheckNode(ASTNode node, TypeCheckContext context);
-int typeCheckChildren(ASTNode node, TypeCheckContext context);
+int typeCheckNode(ASTNode node, TypeCheckContext context, DataType expectedType);
+int typeCheckChildren(ASTNode node, TypeCheckContext context, DataType expectedType);
 int validateFunctionDef(ASTNode node, TypeCheckContext context);
 int validateFunctionCall(ASTNode node, TypeCheckContext context);
 int validateReturnStatement(ASTNode node, TypeCheckContext context);

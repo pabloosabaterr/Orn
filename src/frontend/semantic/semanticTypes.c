@@ -23,6 +23,27 @@
  * helper
  */
 
+NodeTypes symbolTypeToNodeType(DataType type){
+    switch (type) {
+        case TYPE_I8:     return REF_I8;
+        case TYPE_I16:    return REF_I16;
+        case TYPE_I32:    return REF_I32;
+        case TYPE_I64:    return REF_I64;
+        case TYPE_U8:     return REF_U8;
+        case TYPE_U16:    return REF_U16;
+        case TYPE_U32:    return REF_U32;
+        case TYPE_U64:    return REF_U64;
+        case TYPE_FLOAT:   return REF_FLOAT;
+        case TYPE_DOUBLE:  return REF_DOUBLE;
+        case TYPE_STRING:  return REF_STRING;
+        case TYPE_BOOL:    return REF_BOOL;
+        case TYPE_VOID:    return REF_VOID;
+        case TYPE_STRUCT:  return REF_CUSTOM;
+        case TYPE_POINTER: return POINTER;
+        default:           return null_NODE; /* should not happen */
+    }
+}
+
 const char *getTypeName(DataType type) {
     switch (type) {
         case TYPE_I8:     return "i8";
@@ -374,7 +395,14 @@ DataType validateMemberAccess(ASTNode node, TypeCheckContext context) {
  * type inference
  */
 
-DataType getExpressionType(ASTNode node, TypeCheckContext context) {
+DataType resolveIntLitType(DataType expectedType){
+    assert(expectedType != TYPE_UNKNOWN && "Expected type must be known");
+    int isValidInt = isIntegerType(expectedType);
+    assert(isValidInt && "Expected type for int literal must be an integer type");
+    return expectedType;
+}
+
+DataType getExpressionType(ASTNode node, TypeCheckContext context, DataType expectedType) {
     if (node == NULL) return TYPE_UNKNOWN;
     switch (node->nodeType) {
         case LITERAL: {
@@ -391,6 +419,9 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
                 case REF_U16:    return TYPE_U16;
                 case REF_U32:    return TYPE_U32;
                 case REF_U64:    return TYPE_U64;
+                case REF_INT_UNRESOLVED: {
+                    return resolveIntLitType(expectedType);
+                }
                 case REF_FLOAT:  return TYPE_FLOAT;
                 case REF_BOOL:   return TYPE_BOOL;
                 case REF_DOUBLE: return TYPE_DOUBLE;
@@ -459,7 +490,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
 
         case MEMADDRS: {
             if (!node->children) return TYPE_UNKNOWN;
-            DataType innerType = getExpressionType(node->children, context);
+            DataType innerType = getExpressionType(node->children, context, expectedType);
             if (innerType == TYPE_UNKNOWN) return TYPE_UNKNOWN;
             return TYPE_POINTER;
         }
@@ -484,7 +515,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
 
         case UNARY_MINUS_OP:
         case UNARY_PLUS_OP: {
-            DataType operandType = getExpressionType(node->children, context);
+            DataType operandType = getExpressionType(node->children, context, expectedType);
             if (isNumType(operandType)) return operandType;
             REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
                         "Unary +/- requires numeric operand");
@@ -492,7 +523,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
         }
 
         case LOGIC_NOT: {
-            DataType operandType = getExpressionType(node->children, context);
+            DataType operandType = getExpressionType(node->children, context, expectedType);
             if (operandType == TYPE_BOOL) return TYPE_BOOL;
             REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
                         "Logical NOT requires boolean operand");
@@ -503,7 +534,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
         case PRE_DECREMENT:
         case POST_INCREMENT:
         case POST_DECREMENT: {
-            DataType operandType = getExpressionType(node->children, context);
+            DataType operandType = getExpressionType(node->children, context, expectedType);
             if (isIntegerType(operandType) || operandType == TYPE_FLOAT || operandType == TYPE_DOUBLE) {
                 return operandType;
             }
@@ -522,8 +553,8 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
                 return TYPE_UNKNOWN;
             }
 
-            DataType leftType = getExpressionType(node->children, context);
-            DataType rightType = getExpressionType(node->children->brothers, context);
+            DataType leftType = getExpressionType(node->children, context, expectedType);
+            DataType rightType = getExpressionType(node->children->brothers, context, expectedType);
 
             if (!isIntegerType(leftType) || !isIntegerType(rightType)) {
                 REPORT_ERROR(ERROR_INCOMPATIBLE_BINARY_OPERANDS, node, context,
@@ -535,7 +566,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
         }
 
         case BITWISE_NOT: {
-            DataType opType = getExpressionType(node->children, context);
+            DataType opType = getExpressionType(node->children, context, expectedType);
             if (isIntegerType(opType)) return opType;
             REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
                         "Bitwise NOT requires integer operand");
@@ -560,8 +591,8 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
                 return TYPE_UNKNOWN;
             }
 
-            DataType leftType = getExpressionType(node->children, context);
-            DataType rightType = getExpressionType(node->children->brothers, context);
+            DataType leftType = getExpressionType(node->children, context, expectedType);
+            DataType rightType = getExpressionType(node->children->brothers, context, expectedType);
             DataType resultType = getOperationResultType(leftType, rightType, node->nodeType);
             if (resultType == TYPE_UNKNOWN) {
                 REPORT_ERROR(ERROR_INCOMPATIBLE_BINARY_OPERANDS, node, context,
@@ -596,7 +627,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
         case TERNARY_CONDITIONAL: {
             if (!node->children || !node->children->brothers) return TYPE_UNKNOWN;
 
-            if (getExpressionType(node->children, context) != TYPE_BOOL) {
+            if (getExpressionType(node->children, context, TYPE_BOOL) != TYPE_BOOL) {
                 REPORT_ERROR(ERROR_INVALID_CONDITION_TYPE, node, context,
                             "Ternary condition must be boolean");
                 return TYPE_UNKNOWN;
@@ -610,8 +641,8 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
 
             if (!trueExpr || !falseExpr) return TYPE_UNKNOWN;
 
-            DataType trueType = getExpressionType(trueExpr, context);
-            DataType falseType = getExpressionType(falseExpr, context);
+            DataType trueType = getExpressionType(trueExpr, context, expectedType);
+            DataType falseType = getExpressionType(falseExpr, context, expectedType);
 
             if (areCompatible(trueType, falseType) != COMPAT_ERROR) return trueType;
             if (areCompatible(falseType, trueType) != COMPAT_ERROR) return falseType;

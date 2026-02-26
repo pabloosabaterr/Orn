@@ -38,6 +38,7 @@ typedef enum {
     REF_U16,
     REF_U32,
     REF_U64,
+    REF_INT_UNRESOLVED,
     REF_STRING,
     REF_FLOAT,
     REF_BOOL,
