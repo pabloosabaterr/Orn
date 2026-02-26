@@ -39,6 +39,7 @@ NodeTypes getTypeNodeFromToken(TokenType type){
         case TK_U16:    return REF_U16;
         case TK_U32:    return REF_U32;
         case TK_U64:    return REF_U64;
+        case TK_STRING: return REF_STRING;
         case TK_FLOAT:  return REF_FLOAT;
         case TK_BOOL:   return REF_BOOL;
         case TK_VOID:   return REF_VOID;
@@ -67,7 +68,8 @@ int isIntTypeNode(NodeTypes nodeType){
             nodeType == REF_U8 ||
             nodeType == REF_U16 ||
             nodeType == REF_U32 ||
-            nodeType == REF_U64);
+            nodeType == REF_U64 || 
+            nodeType == REF_INT_UNRESOLVED);
 }
 
 int isTypeToken(TokenType type){

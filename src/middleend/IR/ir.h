@@ -186,8 +186,8 @@ IrDataType symbolTypeToIrType(DataType type);
 IrDataType nodeTypeToIrType(NodeTypes nodeType);
 IrOpCode astOpToIrOp(NodeTypes nodeType);
 
-IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx, NodeTypes expectedType);
-void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx, NodeTypes expectedType);
+IrOperand generateExpressionIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx, DataType expectedType);
+void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx, DataType expectedType);
 IrContext *generateIr(ASTNode ast, TypeCheckContext typeCtx);
 
 void printInstruction(IrInstruction *inst);

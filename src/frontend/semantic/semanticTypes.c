@@ -159,7 +159,7 @@ int getStackSize(DataType type) {
 CompatResult areCompatible(DataType target, DataType source) {
     if (target == source) return COMPAT_OK;
 
-    /* Pointer rules (unchanged) */
+    /* Pointer rules */
     if (target == TYPE_POINTER && source == TYPE_POINTER) return COMPAT_OK;
     if (source == TYPE_NULL && target == TYPE_POINTER) return COMPAT_OK;
     if (target == TYPE_NULL && source == TYPE_POINTER) return COMPAT_OK;
@@ -174,7 +174,7 @@ CompatResult areCompatible(DataType target, DataType source) {
         return COMPAT_ERROR;  /* mixed signedness needs explicit cast */
     }
 
-    /* Float/double promotion (unchanged logic) */
+    /* Float/double promotion */
     if (target == TYPE_FLOAT) {
         if (source == TYPE_DOUBLE) return COMPAT_WARNING;
         return isIntegerType(source) ? COMPAT_OK : COMPAT_ERROR;
@@ -184,10 +184,10 @@ CompatResult areCompatible(DataType target, DataType source) {
             ? COMPAT_OK : COMPAT_ERROR;
     }
 
-    /* Bool ↔ integer (unchanged) */
+    /* Bool - integer */
     if ((source == TYPE_BOOL && isIntegerType(target)) ||
         (isIntegerType(source) && target == TYPE_BOOL)) {
-        return COMPAT_OK;
+        return COMPAT_ERROR;
     }
 
     /* String, pointer, bool, struct: strict */
@@ -271,7 +271,7 @@ CompatResult isCastAllowed(DataType target, DataType source) {
         return COMPAT_OK;
     }
 
-    if (target == TYPE_BOOL || source == TYPE_BOOL) return COMPAT_OK;
+    if (target == TYPE_BOOL || source == TYPE_BOOL) return COMPAT_ERROR;
     return COMPAT_ERROR;
 }
 
@@ -396,10 +396,19 @@ DataType validateMemberAccess(ASTNode node, TypeCheckContext context) {
  */
 
 DataType resolveIntLitType(DataType expectedType){
-    assert(expectedType != TYPE_UNKNOWN && "Expected type must be known");
-    int isValidInt = isIntegerType(expectedType);
-    assert(isValidInt && "Expected type for int literal must be an integer type");
+    assert(isIntegerType(expectedType) && "Expected type for int literal must be an integer type");
     return expectedType;
+}
+
+static DataType inferIntLitType(DataType expectedType) {
+    if (isIntegerType(expectedType)) {
+        return resolveIntLitType(expectedType);
+    }
+
+    /*
+     * No integer expectation is available (or caller provided a non-integer expectation)
+     */
+    return TYPE_I32;
 }
 
 DataType getExpressionType(ASTNode node, TypeCheckContext context, DataType expectedType) {
@@ -420,7 +429,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context, DataType expe
                 case REF_U32:    return TYPE_U32;
                 case REF_U64:    return TYPE_U64;
                 case REF_INT_UNRESOLVED: {
-                    return resolveIntLitType(expectedType);
+                    return inferIntLitType(expectedType);
                 }
                 case REF_FLOAT:  return TYPE_FLOAT;
                 case REF_BOOL:   return TYPE_BOOL;

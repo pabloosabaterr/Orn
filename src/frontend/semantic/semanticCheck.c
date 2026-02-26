@@ -72,10 +72,23 @@ int validateArrayAccessNode(ASTNode arrayAccess, TypeCheckContext context) {
         REPORT_ERROR(ERROR_ARRAY_INDEX_NOT_INTEGER, indexNode, context, "Array index must be integer type");
         return 0;
     }
+    
+    if (arraySym->isArray) {
+        int hasConstIndex = 0;
+        int indexValue = 0;
 
-    if (arraySym->isArray && indexNode->nodeType == LITERAL) {
-        int indexValue = parseInt(indexNode->start, indexNode->length);
-        if (indexValue < 0 || indexValue >= arraySym->staticSize) {
+        if (indexNode->nodeType == LITERAL) {
+            hasConstIndex = 1;
+            indexValue = parseInt(indexNode->start, indexNode->length);
+        } else if (indexNode->nodeType == VARIABLE) {
+            Symbol idxSym = lookupSymbol(context->current, indexNode->start, indexNode->length);
+            if (idxSym && idxSym->isConst && idxSym->hasConstVal) {
+                hasConstIndex = 1;
+                indexValue = idxSym->constVal;
+            }
+        }
+
+        if (hasConstIndex && (indexValue < 0 || indexValue >= arraySym->staticSize)) {
             char msg[100];
             snprintf(msg, sizeof(msg), "Array index %d out of bounds [0, %d)", indexValue, arraySym->staticSize);
             REPORT_ERROR(ERROR_INVALID_EXPRESSION, indexNode, context, msg);
@@ -453,7 +466,6 @@ int validateScalarInitialization(Symbol newSymbol, ASTNode node, DataType varTyp
         updateConstMemRef(newSymbol, initExpr, context);
     }
 
-    printf("varType: %d, symbolType: %d\n", varType, newSymbol->type);
     DataType initType = getExpressionType(initExprForType, context, varType);
     if (initType == TYPE_UNKNOWN) {
         reportErrorWithText(ERROR_INTERNAL_TYPECHECKER_ERROR, node, context,
