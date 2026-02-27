@@ -1,13 +1,13 @@
 export fn itoa(n: i64, buf: *char, bufLen: i64) -> *char {
-    let MINUS: char = 45 as char; // ASCII '-'
-    let ZERO: char = 48 as char; // ASCII '0', digits are 48-57
+    let MINUS: char = 45; // ASCII '-'
+    let ZERO: char = 48; // ASCII '0', digits are 48-57
 
     if bufLen < 2 {
         return null;
     }
 
     let i: i64 = bufLen - 1;
-    buf[i] = 0 as char; // last slot is null terminator
+    buf[i] = 0; // last slot is null terminator
     i = i - 1;
 
     let neg: bool = false;

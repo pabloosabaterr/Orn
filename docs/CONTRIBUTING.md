@@ -1,6 +1,6 @@
 # Contributing to Orn
 
-Thank you for your interest in contributing to Orn, a modern low-level programming language with clear error messages and fast builds!
+Thank you for your interest in contributing to Orn, a modern low-level programming language!
 
 This document outlines guidelines to help you contribute effectively. Whether you're reporting bugs, suggesting features, or submitting code, we appreciate your help.
 
@@ -37,16 +37,6 @@ We welcome new ideas! Open an issue with the `[Feature Request]` prefix includin
 - How it fits Orn's philosophy of explicitness, safety, and clear error feedback
 - Example `.orn` syntax if it involves new language constructs
 
-### Submitting Code
-
-1. Fork the repository and clone your fork locally
-2. Create a feature branch (e.g., `feat/bitwise-operators` or `fix/array-bounds`)
-3. Implement changes following the phase-by-phase pattern: lexer → parser → type checker → IR → codegen → tests
-4. Add tests using the Unity framework
-5. Run the full test suite and ensure CI passes
-6. Commit with clear messages using `phase: description` format (e.g., `parser: add bitwise AND expression node`)
-7. Push your branch and open a pull request targeting `main`
-
 ## Development Setup
 
 Ensure you have GCC (or Clang), CMake 3.10+, and Git installed. Then:
@@ -72,17 +62,6 @@ The `--recurse-submodules` flag pulls in the [Unity](https://github.com/ThrowThe
 - `--ir` — Dump the intermediate representation
 - `--verbose` — Show full build pipeline (module discovery, compilation order, linking)
 - `-O0` to `-O3` / `-Ox` — Optimization levels
-
-These are invaluable when debugging a new feature through the pipeline.
-
-## Style Guide
-
-- Follow consistent indentation (one tab)
-- Use `camelCase` for functions/variables, `PascalCase` for types/structs, `UPPER_SNAKE_CASE` for constants `lower_snake_case` for tests
-- Write clear and concise comments where intent isn't obvious
-- Prefer explicit error handling — follow Orn's structured error format (`error [EXXXX]` with context, notes, and suggestions)
-- Free what you allocate — run Valgrind if you're touching allocation logic
-- Use the existing code style as a reference
 
 ## Testing
 

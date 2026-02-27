@@ -757,7 +757,8 @@ int validateAssignment(ASTNode node, TypeCheckContext context) {
     }
 
     /* Type compatibility checking */
-    DataType leftType = getExpressionType(leftForType, context, sym->type); /* expected type on assignement is unecesary because its never going to be a unresolved type */
+    DataType expectedLeftType = sym ? sym->type : TYPE_UNKNOWN;
+    DataType leftType = getExpressionType(leftForType, context, expectedLeftType);
     if (leftType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_EXPRESSION_TYPE_UNKNOWN_LHS, leftForType, context, "Cannot determine type of left-hand side");
         return 0;
