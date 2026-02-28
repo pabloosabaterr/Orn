@@ -15,7 +15,7 @@ int constantFolding(IrContext *ctx){
                 case IR_ADD: {
                     inst->op = IR_COPY;
                     switch(inst->result.dataType){
-                        case IR_TYPE_INT: inst->ar1 = createIntConst(inst->ar1.value.constant.intVal + inst->ar2.value.constant.intVal); break;
+                        case IR_TYPE_I32: inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal + inst->ar2.value.constant.intVal, inst->result.dataType); break;
                         case IR_TYPE_FLOAT: inst->ar1 = createFloatConst(inst->ar1.value.constant.floatVal + inst->ar2.value.constant.floatVal); break;
                         case IR_TYPE_DOUBLE: inst->ar1 = createDoubleConst(inst->ar1.value.constant.doubleVal + inst->ar2.value.constant.doubleVal); break;
                         default: break;
@@ -25,7 +25,7 @@ int constantFolding(IrContext *ctx){
                 case IR_SUB: {
                     inst->op = IR_COPY;
                     switch(inst->result.dataType){
-                        case IR_TYPE_INT: inst->ar1 = createIntConst(inst->ar1.value.constant.intVal - inst->ar2.value.constant.intVal); break;
+                        case IR_TYPE_I32: inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal - inst->ar2.value.constant.intVal, inst->result.dataType); break;
                         case IR_TYPE_FLOAT: inst->ar1 = createFloatConst(inst->ar1.value.constant.floatVal - inst->ar2.value.constant.floatVal); break;
                         case IR_TYPE_DOUBLE: inst->ar1 = createDoubleConst(inst->ar1.value.constant.doubleVal - inst->ar2.value.constant.doubleVal); break;
                         default: break;
@@ -35,7 +35,7 @@ int constantFolding(IrContext *ctx){
                 case IR_MUL: {
                     inst->op = IR_COPY;
                     switch(inst->result.dataType){
-                        case IR_TYPE_INT: inst->ar1 = createIntConst(inst->ar1.value.constant.intVal * inst->ar2.value.constant.intVal); break;
+                        case IR_TYPE_I32: inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal * inst->ar2.value.constant.intVal, inst->result.dataType); break;
                         case IR_TYPE_FLOAT: inst->ar1 = createFloatConst(inst->ar1.value.constant.floatVal * inst->ar2.value.constant.floatVal); break;
                         case IR_TYPE_DOUBLE: inst->ar1 = createDoubleConst(inst->ar1.value.constant.doubleVal * inst->ar2.value.constant.doubleVal); break;
                         default: break;
@@ -45,7 +45,7 @@ int constantFolding(IrContext *ctx){
                 case IR_DIV: {
                     inst->op = IR_COPY;
                     switch(inst->result.dataType){
-                        case IR_TYPE_INT: inst->ar1 = createIntConst(inst->ar1.value.constant.intVal / inst->ar2.value.constant.intVal); break;
+                        case IR_TYPE_I32: inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal / inst->ar2.value.constant.intVal, inst->result.dataType); break;
                         case IR_TYPE_FLOAT: inst->ar1 = createFloatConst(inst->ar1.value.constant.floatVal / inst->ar2.value.constant.floatVal); break;
                         case IR_TYPE_DOUBLE: inst->ar1 = createDoubleConst(inst->ar1.value.constant.doubleVal / inst->ar2.value.constant.doubleVal); break;
                         default: break;
@@ -54,27 +54,27 @@ int constantFolding(IrContext *ctx){
                 }
                 case IR_BIT_AND: {
                     inst->op = IR_COPY;
-                    inst->ar1 = createIntConst(inst->ar1.value.constant.intVal & inst->ar2.value.constant.intVal);
+                    inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal & inst->ar2.value.constant.intVal, inst->result.dataType);
                     break;
                 }
                 case IR_BIT_OR: {
                     inst->op = IR_COPY;
-                    inst->ar1 = createIntConst(inst->ar1.value.constant.intVal | inst->ar2.value.constant.intVal);
+                    inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal | inst->ar2.value.constant.intVal, inst->result.dataType);
                     break;
                 }
                 case IR_BIT_XOR: {
                     inst->op = IR_COPY;
-                    inst->ar1 = createIntConst(inst->ar1.value.constant.intVal ^ inst->ar2.value.constant.intVal);
+                    inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal ^ inst->ar2.value.constant.intVal, inst->result.dataType);
                     break;
                 }
                 case IR_SHL: {
                     inst->op = IR_COPY;
-                    inst->ar1 = createIntConst(inst->ar1.value.constant.intVal << inst->ar2.value.constant.intVal);
+                    inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal << inst->ar2.value.constant.intVal, inst->result.dataType);
                     break;
                 }
                 case IR_SHR: {
                     inst->op = IR_COPY;
-                    inst->ar1 = createIntConst(inst->ar1.value.constant.intVal >> inst->ar2.value.constant.intVal);
+                    inst->ar1 = createSizedIntConst(inst->ar1.value.constant.intVal >> inst->ar2.value.constant.intVal, inst->result.dataType);
                     break;
                 }
                 default: break;

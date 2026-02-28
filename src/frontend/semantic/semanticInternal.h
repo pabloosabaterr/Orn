@@ -2,7 +2,7 @@
  * @file semanticInternal.h
  * @brief Internal shared header for semantic analysis modules.
  *
- * This header is included ONLY by semantic/*.c files.
+ * This header is included ONLY by semantic.c files.
  * It must NEVER be included outside the semantic/ directory.
  *
  * Contains internal function prototypes and helper declarations.
@@ -30,6 +30,8 @@ DataType validateMemberAccess(ASTNode node, TypeCheckContext context);
 int isPrecisionLossCast(DataType source, DataType target);
 int isNumType(DataType type);
 CompatResult isCastAllowed(DataType target, DataType source);
+int isUnsignedInt(DataType type);
+int getIntegerRank(DataType type);
 
 /* symbol helpers */
 

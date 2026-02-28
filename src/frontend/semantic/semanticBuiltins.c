@@ -16,45 +16,14 @@
 
 static BuiltInFunction builtInFunctions[] = {
     {
-        .name = "print",
-        .returnType = TYPE_VOID,
+        .name = "syscall",
+        .returnType = TYPE_I64,
         .paramTypes = NULL,
         .paramNames = NULL,
-        .paramCount = 1,
-        .id = BUILTIN_PRINT_INT
-    },
-    {
-        .name = "print",
-        .returnType = TYPE_VOID,
-        .paramTypes = NULL,
-        .paramNames = NULL,
-        .paramCount = 1,
-        .id = BUILTIN_PRINT_STRING
-    },
-    {
-        .name = "print",
-        .returnType = TYPE_VOID,
-        .paramTypes = NULL,
-        .paramNames = NULL,
-        .paramCount = 1,
-        .id = BUILTIN_PRINT_FLOAT
-    },
-    {
-        .name = "print",
-        .returnType = TYPE_VOID,
-        .paramTypes = NULL,
-        .paramNames = NULL,
-        .paramCount = 1,
-        .id = BUILTIN_PRINT_BOOL
-    },
-    {
-        .name = "print",
-        .returnType = TYPE_VOID,
-        .paramTypes = NULL,
-        .paramNames = NULL,
-        .paramCount = 1,
-        .id = BUILTIN_PRINT_DOUBLE
-    },
+        .paramCount = 7,
+        .id = BUILTIN_SYSCALL
+
+    }
 };
 
 static int builtInFnCount = sizeof(builtInFunctions) / sizeof(BuiltInFunction);
@@ -63,30 +32,23 @@ static int builtInsInit = 0;
 static void initBuiltInsParams(void) {
     if (builtInsInit) return;
 
-    builtInFunctions[0].paramTypes = malloc(sizeof(DataType));
-    builtInFunctions[0].paramTypes[0] = TYPE_INT;
-    builtInFunctions[0].paramNames = malloc(sizeof(char *));
-    builtInFunctions[0].paramNames[0] = strdup("value");
+    builtInFunctions[0].paramTypes = malloc(sizeof(DataType) * 7);
+    builtInFunctions[0].paramTypes[0] = TYPE_I64;
+    builtInFunctions[0].paramTypes[1] = TYPE_I64;
+    builtInFunctions[0].paramTypes[2] = TYPE_I64;
+    builtInFunctions[0].paramTypes[3] = TYPE_I64;
+    builtInFunctions[0].paramTypes[4] = TYPE_I64;
+    builtInFunctions[0].paramTypes[5] = TYPE_I64;
+    builtInFunctions[0].paramTypes[6] = TYPE_I64;
 
-    builtInFunctions[1].paramTypes = malloc(sizeof(DataType));
-    builtInFunctions[1].paramTypes[0] = TYPE_STRING;
-    builtInFunctions[1].paramNames = malloc(sizeof(char *));
-    builtInFunctions[1].paramNames[0] = strdup("value");
-
-    builtInFunctions[2].paramTypes = malloc(sizeof(DataType));
-    builtInFunctions[2].paramTypes[0] = TYPE_FLOAT;
-    builtInFunctions[2].paramNames = malloc(sizeof(char *));
-    builtInFunctions[2].paramNames[0] = strdup("value");
-
-    builtInFunctions[3].paramTypes = malloc(sizeof(DataType));
-    builtInFunctions[3].paramTypes[0] = TYPE_BOOL;
-    builtInFunctions[3].paramNames = malloc(sizeof(char *));
-    builtInFunctions[3].paramNames[0] = strdup("value");
-
-    builtInFunctions[4].paramTypes = malloc(sizeof(DataType));
-    builtInFunctions[4].paramTypes[0] = TYPE_DOUBLE;
-    builtInFunctions[4].paramNames = malloc(sizeof(char *));
-    builtInFunctions[4].paramNames[0] = strdup("value");
+    builtInFunctions[0].paramNames = malloc(sizeof(char *) * 7);
+    builtInFunctions[0].paramNames[0] = strdup("a");
+    builtInFunctions[0].paramNames[1] = strdup("b");
+    builtInFunctions[0].paramNames[2] = strdup("c");
+    builtInFunctions[0].paramNames[3] = strdup("d");
+    builtInFunctions[0].paramNames[4] = strdup("e");
+    builtInFunctions[0].paramNames[5] = strdup("f");
+    builtInFunctions[0].paramNames[6] = strdup("g");
 
     builtInsInit = 1;
 }
@@ -153,6 +115,9 @@ BuiltInId resolveOverload(const char *nameStart, size_t nameLength, DataType arg
             continue;
 
         if (builtin->paramCount != argCount) continue;
+
+        // syscall accepts any types - kernel sees raw 64-bit values
+        if (builtin->id == BUILTIN_SYSCALL) return builtin->id;
 
         int typesMatch = 1;
         for (int j = 0; j < argCount; j++) {

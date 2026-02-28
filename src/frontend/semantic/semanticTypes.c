@@ -23,9 +23,37 @@
  * helper
  */
 
+NodeTypes symbolTypeToNodeType(DataType type){
+    switch (type) {
+        case TYPE_I8:     return REF_I8;
+        case TYPE_I16:    return REF_I16;
+        case TYPE_I32:    return REF_I32;
+        case TYPE_I64:    return REF_I64;
+        case TYPE_U8:     return REF_U8;
+        case TYPE_U16:    return REF_U16;
+        case TYPE_U32:    return REF_U32;
+        case TYPE_U64:    return REF_U64;
+        case TYPE_FLOAT:   return REF_FLOAT;
+        case TYPE_DOUBLE:  return REF_DOUBLE;
+        case TYPE_STRING:  return REF_STRING;
+        case TYPE_BOOL:    return REF_BOOL;
+        case TYPE_VOID:    return REF_VOID;
+        case TYPE_STRUCT:  return REF_CUSTOM;
+        case TYPE_POINTER: return POINTER;
+        default:           return null_NODE; /* should not happen */
+    }
+}
+
 const char *getTypeName(DataType type) {
     switch (type) {
-        case TYPE_INT:     return "int";
+        case TYPE_I8:     return "i8";
+        case TYPE_I16:    return "i16";
+        case TYPE_I32:    return "i32";
+        case TYPE_I64:    return "i64";
+        case TYPE_U8:     return "u8";
+        case TYPE_U16:    return "u16";
+        case TYPE_U32:    return "u32";
+        case TYPE_U64:    return "u64";
         case TYPE_FLOAT:   return "float";
         case TYPE_DOUBLE:  return "double";
         case TYPE_STRING:  return "string";
@@ -40,16 +68,16 @@ const char *getTypeName(DataType type) {
 
 /* Compatibility error handling */
 ErrorCode variableErrorCompatibleHandling(DataType varType, DataType initType) {
-    switch (varType) {
-        case TYPE_INT: {
-            switch (initType) {
-                case TYPE_STRING: return ERROR_TYPE_MISMATCH_STRING_TO_INT;
-                case TYPE_BOOL:   return ERROR_TYPE_MISMATCH_BOOL_TO_INT;
-                case TYPE_FLOAT:  return ERROR_TYPE_MISMATCH_FLOAT_TO_INT;
-                case TYPE_DOUBLE: return ERROR_TYPE_MISMATCH_DOUBLE_TO_INT;
-                default:          return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
-            }
+    if (isIntegerType(varType)) {
+        switch (initType) {
+            case TYPE_STRING: return ERROR_TYPE_MISMATCH_STRING_TO_INT;
+            case TYPE_BOOL:   return ERROR_TYPE_MISMATCH_BOOL_TO_INT;
+            case TYPE_FLOAT:  return ERROR_TYPE_MISMATCH_FLOAT_TO_INT;
+            case TYPE_DOUBLE: return ERROR_TYPE_MISMATCH_DOUBLE_TO_INT;
+            default:          return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
         }
+    }
+    switch (varType) {
         case TYPE_FLOAT: {
             switch (initType) {
                 case TYPE_STRING: return ERROR_TYPE_MISMATCH_STRING_TO_FLOAT;
@@ -65,26 +93,28 @@ ErrorCode variableErrorCompatibleHandling(DataType varType, DataType initType) {
                 default:          return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
             }
         }
+        case TYPE_STRING: {
+            switch (initType) {
+                case TYPE_BOOL:   return ERROR_TYPE_MISMATCH_BOOL_TO_STRING;
+                case TYPE_FLOAT:  return ERROR_TYPE_MISMATCH_FLOAT_TO_STRING;
+                case TYPE_DOUBLE: return ERROR_TYPE_MISMATCH_DOUBLE_TO_STRING;
+                default:
+                    if (isIntegerType(initType)) return ERROR_TYPE_MISMATCH_INT_TO_STRING;
+                    return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
+            }
+        }
         case TYPE_BOOL: {
             switch (initType) {
                 case TYPE_STRING: return ERROR_TYPE_MISMATCH_STRING_TO_BOOL;
-                case TYPE_INT:    return ERROR_TYPE_MISMATCH_INT_TO_BOOL;
                 case TYPE_FLOAT:  return ERROR_TYPE_MISMATCH_FLOAT_TO_BOOL;
                 case TYPE_DOUBLE: return ERROR_TYPE_MISMATCH_DOUBLE_TO_BOOL;
-                default:          return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
-            }
-        }
-        case TYPE_STRING: {
-            switch (initType) {
-                case TYPE_INT:    return ERROR_TYPE_MISMATCH_INT_TO_STRING;
-                case TYPE_FLOAT:  return ERROR_TYPE_MISMATCH_FLOAT_TO_STRING;
-                case TYPE_DOUBLE: return ERROR_TYPE_MISMATCH_DOUBLE_TO_STRING;
-                case TYPE_BOOL:   return ERROR_TYPE_MISMATCH_BOOL_TO_STRING;
-                default:          return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
+                default:
+                    if (isIntegerType(initType)) return ERROR_TYPE_MISMATCH_INT_TO_BOOL;
+                    return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
             }
         }
         default:
-            return ERROR_INVALID_OPERATION_FOR_TYPE;
+            return ERROR_INCOMPATIBLE_BINARY_OPERANDS;
     }
 }
 
@@ -110,24 +140,15 @@ ASTNode getBaseTypeFromPointerChain(ASTNode typeRefNode, int *outPointerLevel) {
  * Stack info
  */
 
-typedef enum {
-    STACK_SIZE_INT    = 4,
-    STACK_SIZE_FLOAT  = 4,
-    STACK_SIZE_BOOL   = 1,
-    STACK_SIZE_STRING = 8,
-    STACK_SIZE_DOUBLE = 8,
-    ALIGNMENT         = 16
-} StackSizeEnum;
-
 int getStackSize(DataType type) {
     switch (type) {
-        case TYPE_INT:    return STACK_SIZE_INT;
-        case TYPE_FLOAT:  return STACK_SIZE_FLOAT;
-        case TYPE_BOOL:   return STACK_SIZE_BOOL;
-        case TYPE_STRING: return STACK_SIZE_STRING;
-        case TYPE_STRUCT: return STACK_SIZE_STRING;
-        case TYPE_DOUBLE: return STACK_SIZE_DOUBLE;
-        default:          return STACK_SIZE_INT;
+        case TYPE_I8:     case TYPE_U8:     case TYPE_BOOL:   return 1;
+        case TYPE_I16:    case TYPE_U16:                      return 2;
+        case TYPE_I32:    case TYPE_U32:    
+        case TYPE_FLOAT:                                      return 4;
+        case TYPE_I64:    case TYPE_U64:    case TYPE_DOUBLE: 
+        case TYPE_STRING: case TYPE_STRUCT: case TYPE_POINTER: return 8;
+        default: return 4;
     }
 }
 
@@ -136,55 +157,121 @@ int getStackSize(DataType type) {
  */
 
 CompatResult areCompatible(DataType target, DataType source) {
-    if (target == TYPE_POINTER && source == TYPE_POINTER) {
-        return COMPAT_OK;
-    }
-
     if (target == source) return COMPAT_OK;
 
+    /* Pointer rules */
+    if (target == TYPE_POINTER && source == TYPE_POINTER) return COMPAT_OK;
     if (source == TYPE_NULL && target == TYPE_POINTER) return COMPAT_OK;
     if (target == TYPE_NULL && source == TYPE_POINTER) return COMPAT_OK;
     if (source == TYPE_NULL && target == TYPE_NULL)    return COMPAT_OK;
 
-    switch (target) {
-        case TYPE_STRING:
-        case TYPE_BOOL:
-        case TYPE_INT:
-        case TYPE_POINTER:
-            return COMPAT_ERROR;
-        case TYPE_FLOAT: {
-            if (source == TYPE_DOUBLE) return COMPAT_WARNING;
-            return source == TYPE_INT ? COMPAT_OK : COMPAT_ERROR;
+    /* Integer widening: same signedness, source rank <= target rank */
+    if (isIntegerType(target) && isIntegerType(source)) {
+        if (isSignedInt(target) == isSignedInt(source)) {
+            return getIntegerRank(source) <= getIntegerRank(target)
+                ? COMPAT_OK : COMPAT_ERROR;
         }
-        case TYPE_DOUBLE:
-            return source == TYPE_INT || source == TYPE_FLOAT ? COMPAT_OK : COMPAT_ERROR;
-        default:
-            return COMPAT_ERROR;
+        return COMPAT_ERROR;  /* mixed signedness needs explicit cast */
     }
+
+    /* Float/double promotion */
+    if (target == TYPE_FLOAT) {
+        if (source == TYPE_DOUBLE) return COMPAT_WARNING;
+        return isIntegerType(source) ? COMPAT_OK : COMPAT_ERROR;
+    }
+    if (target == TYPE_DOUBLE) {
+        return (isIntegerType(source) || source == TYPE_FLOAT) 
+            ? COMPAT_OK : COMPAT_ERROR;
+    }
+
+    /* Bool - integer */
+    if ((source == TYPE_BOOL && isIntegerType(target)) ||
+        (isIntegerType(source) && target == TYPE_BOOL)) {
+        return COMPAT_ERROR;
+    }
+
+    /* String, pointer, bool, struct: strict */
+    return COMPAT_ERROR;
 }
 
 int isPrecisionLossCast(DataType source, DataType target) {
     if (source == TYPE_DOUBLE && target == TYPE_FLOAT) return 1;
-    if ((source == TYPE_FLOAT || source == TYPE_DOUBLE) && target == TYPE_INT) return 1;
-    if (source == TYPE_INT && target == TYPE_BOOL) return 1;
+    if ((source == TYPE_FLOAT || source == TYPE_DOUBLE) && isIntegerType(target)) return 1;
+    if (isIntegerType(source) && target == TYPE_BOOL) return 1;
+    
+    /* Integer narrowing */
+    if (isIntegerType(source) && isIntegerType(target)) {
+        if (getIntegerRank(source) > getIntegerRank(target)) return 1;
+    }
+    /* Signed and unsigned of same size */
+    if (isIntegerType(source) && isIntegerType(target) &&
+        isSignedInt(source) != isSignedInt(target)) return 1;
+
     return 0;
 }
 
 int isNumType(DataType type) {
-    return type == TYPE_INT || type == TYPE_FLOAT || type == TYPE_DOUBLE;
+    return isIntegerType(type) || type == TYPE_FLOAT || type == TYPE_DOUBLE;
+}
+
+int isIntegerType(DataType type) {
+    switch (type) {
+        case TYPE_I8: case TYPE_I16: case TYPE_I32: case TYPE_I64:
+        case TYPE_U8: case TYPE_U16: case TYPE_U32: case TYPE_U64:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+int isSignedInt(DataType type) {
+    switch (type) {
+        case TYPE_I8: case TYPE_I16: case TYPE_I32: case TYPE_I64:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+int isUnsignedInt(DataType type) {
+    switch (type) {
+        case TYPE_U8: case TYPE_U16: case TYPE_U32: case TYPE_U64:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+int getIntegerRank(DataType type) {
+    switch (type) {
+        case TYPE_I8:  case TYPE_U8:  return 1;
+        case TYPE_I16: case TYPE_U16: return 2;
+        case TYPE_I32: case TYPE_U32: return 3;
+        case TYPE_I64: case TYPE_U64: return 4;
+        default: return 0;
+    }
 }
 
 CompatResult isCastAllowed(DataType target, DataType source) {
     CompatResult baseComp = areCompatible(target, source);
-    if (baseComp != COMPAT_ERROR) {
-        return baseComp;
+    if (baseComp != COMPAT_ERROR) return baseComp;
+
+    /* All integer to integer casts are allowed */
+    if (isIntegerType(source) && isIntegerType(target)) {
+        return isPrecisionLossCast(source, target) ? COMPAT_WARNING : COMPAT_OK;
     }
+
     if (isNumType(source) && isNumType(target)) {
         return isPrecisionLossCast(source, target) ? COMPAT_WARNING : COMPAT_OK;
     }
-    if ((source == TYPE_BOOL && isNumType(target)) || (isNumType(source) && target == TYPE_BOOL)) {
+
+    /* pointer to integer casts */
+    if ((source == TYPE_POINTER && isIntegerType(target)) ||
+        (isIntegerType(source) && target == TYPE_POINTER)) {
         return COMPAT_OK;
     }
+
+    if (target == TYPE_BOOL || source == TYPE_BOOL) return COMPAT_ERROR;
     return COMPAT_ERROR;
 }
 
@@ -195,31 +282,34 @@ DataType getOperationResultType(DataType left, DataType right, NodeTypes op) {
     switch (op) {
         case ADD_OP:
         case SUB_OP:
-            /* Pointer arithmetic */
-            if (left == TYPE_POINTER && right == TYPE_INT) return TYPE_POINTER;
-            if (op == ADD_OP && left == TYPE_INT && right == TYPE_POINTER) return TYPE_POINTER;
-            if (op == SUB_OP && left == TYPE_POINTER && right == TYPE_POINTER) return TYPE_INT;
+            if (left == TYPE_POINTER && isIntegerType(right)) return TYPE_POINTER;
+            if (op == ADD_OP && isIntegerType(left) && right == TYPE_POINTER) return TYPE_POINTER;
+            if (op == SUB_OP && left == TYPE_POINTER && right == TYPE_POINTER) return TYPE_I64;
             /* fall through */
         case MUL_OP:
         case DIV_OP:
         case MOD_OP:
             if (left == TYPE_DOUBLE || right == TYPE_DOUBLE) return TYPE_DOUBLE;
             if (left == TYPE_FLOAT  || right == TYPE_FLOAT)  return TYPE_FLOAT;
-            if (left == TYPE_INT    && right == TYPE_INT)     return TYPE_INT;
+            /* Integer promotion: result is the wider type */
+            if (isIntegerType(left) && isIntegerType(right)) {
+                return getIntegerRank(left) >= getIntegerRank(right) ? left : right;
+            }
             return TYPE_UNKNOWN;
-        case EQUAL_OP:
-        case NOT_EQUAL_OP:
-        case LESS_EQUAL_OP:
-        case GREATER_EQUAL_OP:
-        case LESS_THAN_OP:
-        case GREATER_THAN_OP:
+
+        case EQUAL_OP: case NOT_EQUAL_OP:
+        case LESS_EQUAL_OP: case GREATER_EQUAL_OP:
+        case LESS_THAN_OP: case GREATER_THAN_OP:
             if (areCompatible(left, right) != COMPAT_ERROR ||
                 areCompatible(right, left) != COMPAT_ERROR) return TYPE_BOOL;
+            /* Allow comparison between any integers */
+            if (isIntegerType(left) && isIntegerType(right)) return TYPE_BOOL;
             return TYPE_UNKNOWN;
-        case LOGIC_AND:
-        case LOGIC_OR:
+
+        case LOGIC_AND: case LOGIC_OR:
             if (left == TYPE_BOOL && right == TYPE_BOOL) return TYPE_BOOL;
             return TYPE_UNKNOWN;
+
         default: return TYPE_UNKNOWN;
     }
 }
@@ -227,6 +317,10 @@ DataType getOperationResultType(DataType left, DataType right, NodeTypes op) {
 /**
  * Member access
  */
+
+int isAutoDerefeable(DataType type, StructType structType) {
+    return structType != NULL && (type == TYPE_STRUCT || type == TYPE_POINTER);
+}
 
 ResolvedType resolveMemberAccessType(ASTNode node, TypeCheckContext context) {
     ResolvedType result = { TYPE_UNKNOWN, NULL };
@@ -245,7 +339,9 @@ ResolvedType resolveMemberAccessType(ASTNode node, TypeCheckContext context) {
 
     if (objectNode->nodeType == MEMBER_ACCESS) {
         ResolvedType objResolved = resolveMemberAccessType(objectNode, context);
-        if (objResolved.type != TYPE_STRUCT || !objResolved.structType) {
+        if(isAutoDerefeable(objResolved.type, objResolved.structType)) {
+            structType = objResolved.structType;
+        } else {
             REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, node, context,
                         "Member access on non-struct type");
             return result;
@@ -259,7 +355,10 @@ ResolvedType resolveMemberAccessType(ASTNode node, TypeCheckContext context) {
                         "Undefined variable in member access");
             return result;
         }
-        if (objectSymbol->type != TYPE_STRUCT || !objectSymbol->structType) {
+        if(isAutoDerefeable(objectSymbol->type, objectSymbol->structType)) {
+            structType = objectSymbol->structType;
+        }
+        else {
             REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, node, context,
                         "Member access on non-struct type");
             return result;
@@ -296,7 +395,23 @@ DataType validateMemberAccess(ASTNode node, TypeCheckContext context) {
  * type inference
  */
 
-DataType getExpressionType(ASTNode node, TypeCheckContext context) {
+DataType resolveIntLitType(DataType expectedType){
+    assert(isIntegerType(expectedType) && "Expected type for int literal must be an integer type");
+    return expectedType;
+}
+
+static DataType inferIntLitType(DataType expectedType) {
+    if (isIntegerType(expectedType)) {
+        return resolveIntLitType(expectedType);
+    }
+
+    /*
+     * No integer expectation is available (or caller provided a non-integer expectation)
+     */
+    return TYPE_I32;
+}
+
+DataType getExpressionType(ASTNode node, TypeCheckContext context, DataType expectedType) {
     if (node == NULL) return TYPE_UNKNOWN;
     switch (node->nodeType) {
         case LITERAL: {
@@ -305,7 +420,17 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
                 return TYPE_UNKNOWN;
             }
             switch (node->children->nodeType) {
-                case REF_INT:    return TYPE_INT;
+                case REF_I8:     return TYPE_I8;
+                case REF_I16:    return TYPE_I16;
+                case REF_I32:    return TYPE_I32;
+                case REF_I64:    return TYPE_I64;
+                case REF_U8:     return TYPE_U8;
+                case REF_U16:    return TYPE_U16;
+                case REF_U32:    return TYPE_U32;
+                case REF_U64:    return TYPE_U64;
+                case REF_INT_UNRESOLVED: {
+                    return inferIntLitType(expectedType);
+                }
                 case REF_FLOAT:  return TYPE_FLOAT;
                 case REF_BOOL:   return TYPE_BOOL;
                 case REF_DOUBLE: return TYPE_DOUBLE;
@@ -361,154 +486,72 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
 
                     if (!arraySym->isArray) {
                         REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, current, context,
-                                    "Subscript on non-array type");
+                                    "Subscript on non-array variable");
                         return TYPE_UNKNOWN;
                     }
 
-                    if (arraySym->isPointer) {
-                        int remainingLevel = arraySym->pointerLvl - derefCount;
-
-                        if (remainingLevel < 0) {
-                            REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, node, context,
-                                        "Too many dereference operations");
-                            return TYPE_UNKNOWN;
-                        } else if (remainingLevel > 0) {
-                            return TYPE_POINTER;
-                        } else {
-                            return arraySym->baseType;
-                        }
-                    } else {
-                        REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, node, context,
-                                    "Cannot dereference non-pointer array element");
-                        return TYPE_UNKNOWN;
-                    }
+                    return arraySym->type;
                 }
-            }
-            DataType innerType = getExpressionType(current, context);
-            if (innerType != TYPE_POINTER) {
-                REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, node, context,
-                            "Cannot dereference non-pointer expression");
-                return TYPE_UNKNOWN;
             }
 
             return TYPE_UNKNOWN;
         }
-        case ARRAY_ACCESS: {
-            ASTNode arrayNode = node->children;
-            ASTNode indexNode = arrayNode ? arrayNode->brothers : NULL;
 
-            if (!arrayNode || !indexNode) {
-                repError(ERROR_INTERNAL_PARSER_ERROR, "Invalid array access structure");
-                return TYPE_UNKNOWN;
-            }
-
-            if (arrayNode->nodeType != VARIABLE) {
-                REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, node, context,
-                            "Array access requires variable");
-                return TYPE_UNKNOWN;
-            }
-
-            Symbol sym = lookupSymbol(context->current, arrayNode->start, arrayNode->length);
-            if (!sym) {
-                char *tempText = extractText(arrayNode->start, arrayNode->length);
-                REPORT_ERROR(ERROR_UNDEFINED_VARIABLE, node, context, tempText);
-                free(tempText);
-                return TYPE_UNKNOWN;
-            }
-
-            if (!sym->isArray) {
-                REPORT_ERROR(ERROR_INVALID_OPERATION_FOR_TYPE, node, context,
-                            "Subscript on non-array type");
-                return TYPE_UNKNOWN;
-            }
-
-            DataType indexType = getExpressionType(indexNode, context);
-            if (indexType != TYPE_INT) {
-                REPORT_ERROR(ERROR_ARRAY_INDEX_NOT_INTEGER, indexNode, context,
-                            "Array index must be integer type");
-                return TYPE_UNKNOWN;
-            }
-
-            if (indexNode->nodeType == LITERAL) {
-                int indexValue = parseInt(indexNode->start, indexNode->length);
-                if (indexValue < 0 || indexValue >= sym->staticSize) {
-                    char msg[100];
-                    snprintf(msg, sizeof(msg), "Array index %d out of bounds [0, %d)", indexValue,
-                            sym->staticSize);
-                    REPORT_ERROR(ERROR_ARRAY_INDEX_OUT_OF_BOUNDS, indexNode, context, msg);
-                    return TYPE_UNKNOWN;
-                }
-            } else if (indexNode->nodeType == VARIABLE) {
-                Symbol indexSym =
-                    lookupSymbol(context->current, indexNode->start, indexNode->length);
-                if (indexSym && indexSym->isConst && indexSym->hasConstVal) {
-                    if (indexSym->constVal < 0 || indexSym->constVal >= sym->staticSize) {
-                        char msg[100];
-                        snprintf(msg, sizeof(msg), "Array index %d out of bounds [0, %d)",
-                                indexSym->constVal, sym->staticSize);
-                        REPORT_ERROR(ERROR_ARRAY_INDEX_OUT_OF_BOUNDS, indexNode, context, msg);
-                        return TYPE_UNKNOWN;
-                    }
-                }
-            }
-
-            return sym->type;
-        }
         case MEMADDRS: {
-            ASTNode target = node->children;
-            if (!target) return TYPE_UNKNOWN;
-            if (target->nodeType == VARIABLE) {
-                Symbol sym = lookupSymbol(context->current, target->start, target->length);
-                if (!sym) {
-                    return TYPE_UNKNOWN;
-                }
-            }
+            if (!node->children) return TYPE_UNKNOWN;
+            DataType innerType = getExpressionType(node->children, context, expectedType);
+            if (innerType == TYPE_UNKNOWN) return TYPE_UNKNOWN;
             return TYPE_POINTER;
         }
+
         case VARIABLE: {
-            Symbol symbol = lookupSymbol(context->current, node->start, node->length);
-            if (symbol == NULL) {
-                char *tempText = extractText(node->start, node->length);
-                REPORT_ERROR(ERROR_UNDEFINED_VARIABLE, node, context, tempText);
-                free(tempText);
+            Symbol sym = lookupSymbol(context->current, node->start, node->length);
+            if (!sym) {
+                reportErrorWithText(ERROR_UNDEFINED_VARIABLE, node, context, "Undefined variable");
                 return TYPE_UNKNOWN;
             }
-            return symbol->type;
+            return sym->type;
         }
-        case REF_INT:    return TYPE_INT;
-        case REF_FLOAT:  return TYPE_FLOAT;
-        case REF_BOOL:   return TYPE_BOOL;
-        case REF_DOUBLE: return TYPE_DOUBLE;
-        case REF_STRING: return TYPE_STRING;
+
+        case ARRAY_ACCESS: {
+            if (!validateArrayAccessNode(node, context)) return TYPE_UNKNOWN;
+            ASTNode arrayNode = node->children;
+            Symbol arraySym = lookupSymbol(context->current, arrayNode->start, arrayNode->length);
+            if (!arraySym) return TYPE_UNKNOWN;
+            if (arraySym->isPointer) return arraySym->baseType;
+            return arraySym->type;
+        }
+
         case UNARY_MINUS_OP:
         case UNARY_PLUS_OP: {
-            DataType opType = getExpressionType(node->children, context);
-            if (opType == TYPE_INT || opType == TYPE_FLOAT || opType == TYPE_DOUBLE) {
-                return opType;
-            }
+            DataType operandType = getExpressionType(node->children, context, expectedType);
+            if (isNumType(operandType)) return operandType;
             REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
-                        "Arithmetic unary operators require numeric operands");
+                        "Unary +/- requires numeric operand");
             return TYPE_UNKNOWN;
         }
+
         case LOGIC_NOT: {
-            DataType opType = getExpressionType(node->children, context);
-            if (opType == TYPE_BOOL) return TYPE_BOOL;
+            DataType operandType = getExpressionType(node->children, context, expectedType);
+            if (operandType == TYPE_BOOL) return TYPE_BOOL;
             REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
                         "Logical NOT requires boolean operand");
             return TYPE_UNKNOWN;
         }
+
         case PRE_INCREMENT:
         case PRE_DECREMENT:
         case POST_INCREMENT:
         case POST_DECREMENT: {
-            DataType operandType = getExpressionType(node->children, context);
-            if (operandType == TYPE_INT || operandType == TYPE_FLOAT) {
+            DataType operandType = getExpressionType(node->children, context, expectedType);
+            if (isIntegerType(operandType) || operandType == TYPE_FLOAT || operandType == TYPE_DOUBLE) {
                 return operandType;
             }
             REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
                         "Increment/decrement operators require numeric operands");
             return TYPE_UNKNOWN;
         }
+
         case BITWISE_AND:
         case BITWISE_OR:
         case BITWISE_XOR:
@@ -519,26 +562,23 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
                 return TYPE_UNKNOWN;
             }
 
-            DataType leftType = getExpressionType(node->children, context);
-            DataType rightType = getExpressionType(node->children->brothers, context);
+            DataType leftType = getExpressionType(node->children, context, expectedType);
+            DataType rightType = getExpressionType(node->children->brothers, context, expectedType);
 
-            if (leftType != TYPE_INT || rightType != TYPE_INT) {
+            if (!isIntegerType(leftType) || !isIntegerType(rightType)) {
                 REPORT_ERROR(ERROR_INCOMPATIBLE_BINARY_OPERANDS, node, context,
                             "Bitwise operators require integer operands");
                 return TYPE_UNKNOWN;
             }
 
-            return TYPE_INT;
+            return getIntegerRank(leftType) >= getIntegerRank(rightType) ? leftType : rightType;
         }
 
         case BITWISE_NOT: {
-            DataType opType = getExpressionType(node->children, context);
-            if (opType == TYPE_INT) return TYPE_INT;
-            if (opType != TYPE_INT) {
-                REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
-                            "Bitwise NOT requires integer operand");
-                return TYPE_UNKNOWN;
-            }
+            DataType opType = getExpressionType(node->children, context, expectedType);
+            if (isIntegerType(opType)) return opType;
+            REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
+                        "Bitwise NOT requires integer operand");
             return TYPE_UNKNOWN;
         }
 
@@ -560,8 +600,8 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
                 return TYPE_UNKNOWN;
             }
 
-            DataType leftType = getExpressionType(node->children, context);
-            DataType rightType = getExpressionType(node->children->brothers, context);
+            DataType leftType = getExpressionType(node->children, context, expectedType);
+            DataType rightType = getExpressionType(node->children->brothers, context, expectedType);
             DataType resultType = getOperationResultType(leftType, rightType, node->nodeType);
             if (resultType == TYPE_UNKNOWN) {
                 REPORT_ERROR(ERROR_INCOMPATIBLE_BINARY_OPERANDS, node, context,
@@ -569,6 +609,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
             }
             return resultType;
         }
+
         case CAST_EXPRESSION:
             if (!node->children || !node->children->brothers) return TYPE_UNKNOWN;
             if (!validateCastExpression(node, context)) return TYPE_UNKNOWN;
@@ -576,6 +617,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
                 ASTNode targetTypeNode = node->children->brothers;
                 return getDataTypeFromNode(targetTypeNode->nodeType);
             }
+
         case FUNCTION_CALL: {
             if (!validateFunctionCall(node, context)) {
                 return TYPE_UNKNOWN;
@@ -587,12 +629,14 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
             }
             return TYPE_UNKNOWN;
         }
+
         case MEMBER_ACCESS:
             return validateMemberAccess(node, context);
+
         case TERNARY_CONDITIONAL: {
             if (!node->children || !node->children->brothers) return TYPE_UNKNOWN;
 
-            if (getExpressionType(node->children, context) != TYPE_BOOL) {
+            if (getExpressionType(node->children, context, TYPE_BOOL) != TYPE_BOOL) {
                 REPORT_ERROR(ERROR_INVALID_CONDITION_TYPE, node, context,
                             "Ternary condition must be boolean");
                 return TYPE_UNKNOWN;
@@ -601,29 +645,22 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context) {
             ASTNode trueBranchWrap = node->children->brothers;
             ASTNode falseBranchWrap = trueBranchWrap ? trueBranchWrap->brothers : NULL;
 
-            if (!trueBranchWrap || !falseBranchWrap) return TYPE_UNKNOWN;
-            if (trueBranchWrap->nodeType != TERNARY_IF_EXPR ||
-                falseBranchWrap->nodeType != TERNARY_ELSE_EXPR) {
-                repError(ERROR_INTERNAL_PARSER_ERROR, "Invalid ternary expression structure");
-                return TYPE_UNKNOWN;
-            }
-
-            ASTNode trueExpr = trueBranchWrap->children;
-            ASTNode falseExpr = falseBranchWrap->children;
+            ASTNode trueExpr = trueBranchWrap ? trueBranchWrap->children : NULL;
+            ASTNode falseExpr = falseBranchWrap ? falseBranchWrap->children : NULL;
 
             if (!trueExpr || !falseExpr) return TYPE_UNKNOWN;
 
-            DataType trueType = getExpressionType(trueExpr, context);
-            DataType falseType = getExpressionType(falseExpr, context);
+            DataType trueType = getExpressionType(trueExpr, context, expectedType);
+            DataType falseType = getExpressionType(falseExpr, context, expectedType);
 
-            if (trueType == falseType) return trueType;
+            if (areCompatible(trueType, falseType) != COMPAT_ERROR) return trueType;
+            if (areCompatible(falseType, trueType) != COMPAT_ERROR) return falseType;
 
-            /* Type promotion for numbers */
-            if ((trueType == TYPE_DOUBLE || falseType == TYPE_DOUBLE)) return TYPE_DOUBLE;
-            if ((trueType == TYPE_FLOAT  || falseType == TYPE_FLOAT))  return TYPE_FLOAT;
-
+            REPORT_ERROR(ERROR_INCOMPATIBLE_BINARY_OPERANDS, node, context,
+                        "Ternary branches must have compatible types");
             return TYPE_UNKNOWN;
         }
+
         default:
             return TYPE_UNKNOWN;
     }

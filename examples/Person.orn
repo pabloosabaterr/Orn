@@ -1,11 +1,9 @@
-// STRUCT STILL NOT SUPPORTED AFTER TYPECHECKER, ONLY AST
-
 struct Person {
     age: int
     score: int
 };
 
-let player: Player;
+let player: Person;
 player.age = 25;
 player.score = 100;
 

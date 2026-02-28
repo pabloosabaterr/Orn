@@ -50,13 +50,13 @@ void freeTypeCheckContext(TypeCheckContext context) {
     free(context);
 }
 
-int typeCheckNode(ASTNode node, TypeCheckContext context) {
+int typeCheckNode(ASTNode node, TypeCheckContext context, DataType expectedType) {
     if (node == NULL) return 1;
 
     int success = 1;
     switch (node->nodeType) {
         case PROGRAM:
-            success = typeCheckChildren(node, context);
+            success = typeCheckChildren(node, context, expectedType);
             break;
         case ASSIGNMENT:
         case COMPOUND_ADD_ASSIGN:
@@ -96,7 +96,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
         case PARAMETER:
         case ARGUMENT_LIST:
         case RETURN_TYPE:
-            success = typeCheckChildren(node, context);
+            success = typeCheckChildren(node, context, expectedType);
             break;
         case BLOCK_STATEMENT:
         case BLOCK_EXPRESSION: {
@@ -114,7 +114,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
             /* Enqueue the scope for IR generation to use later */
             enqueueBlockScope(context, blockScope);
 
-            success = typeCheckChildren(node, context);
+            success = typeCheckChildren(node, context, expectedType);
 
             context->current = oldScope;
             break;
@@ -126,7 +126,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
         case LOOP_STATEMENT:
         case IF_TRUE_BRANCH:
         case ELSE_BRANCH:
-            success = typeCheckChildren(node, context);
+            success = typeCheckChildren(node, context, expectedType);
             break;
 
         case VARIABLE:
@@ -151,9 +151,9 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
         case GREATER_EQUAL_OP:
         case LOGIC_AND:
         case LOGIC_OR: {
-            success = typeCheckChildren(node, context);
+            success = typeCheckChildren(node, context, expectedType);
             if (success) {
-                DataType resultType = getExpressionType(node, context);
+                DataType resultType = getExpressionType(node, context, expectedType);
                 if (resultType == TYPE_UNKNOWN) {
                     success = 0;
                 }
@@ -171,9 +171,9 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
         case POST_INCREMENT:
         case POST_DECREMENT:
         case BITWISE_NOT:
-            success = typeCheckChildren(node, context);
+            success = typeCheckChildren(node, context, expectedType);
             if (success) {
-                DataType resultType = getExpressionType(node, context);
+                DataType resultType = getExpressionType(node, context, expectedType);
                 if (resultType == TYPE_UNKNOWN) {
                     success = 0;
                 }
@@ -188,7 +188,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
             success = validateStructVarDec(node, context);
             break;
         default:
-            success = typeCheckChildren(node, context);
+            success = typeCheckChildren(node, context, expectedType);
             break;
     }
     return success;
@@ -197,13 +197,13 @@ int typeCheckNode(ASTNode node, TypeCheckContext context) {
 /**
  * @brief Recursively type checks all children of an AST node.
  */
-int typeCheckChildren(ASTNode node, TypeCheckContext context) {
+int typeCheckChildren(ASTNode node, TypeCheckContext context, DataType expectedType) {
     if (node == NULL) return 1;
 
     int success = 1;
     ASTNode child = node->children;
     while (child != NULL) {
-        if (!typeCheckNode(child, context)) {
+        if (!typeCheckNode(child, context, expectedType)) {
             success = 0;
         }
         child = child->brothers;
@@ -228,7 +228,7 @@ TypeCheckContext typeCheckAST(ASTNode ast, const char *sourceCode, const char *f
         freeTypeCheckContext(context);
         return NULL;
     }
-    int success = typeCheckNode(ast, context);
+    int success = typeCheckNode(ast, context, TYPE_UNKNOWN);
     if (!success) {
         freeTypeCheckContext(context);
         return NULL;

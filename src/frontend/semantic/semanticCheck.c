@@ -62,20 +62,33 @@ int validateArrayAccessNode(ASTNode arrayAccess, TypeCheckContext context) {
     ASTNode indexNode = baseNode->brothers;
     if (!indexNode) return 1;
 
-    DataType indexType = getExpressionType(indexNode, context);
+    DataType indexType = getExpressionType(indexNode, context, TYPE_I32);
     if (indexType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_ARRAY_INDEX_INVALID_EXPR, indexNode, context, "Invalid array index expression");
         return 0;
     }
 
-    if (indexType != TYPE_INT) {
+    if (!isIntegerType(indexType)) {
         REPORT_ERROR(ERROR_ARRAY_INDEX_NOT_INTEGER, indexNode, context, "Array index must be integer type");
         return 0;
     }
+    
+    if (arraySym->isArray) {
+        int hasConstIndex = 0;
+        int indexValue = 0;
 
-    if (arraySym->isArray && indexNode->nodeType == LITERAL) {
-        int indexValue = parseInt(indexNode->start, indexNode->length);
-        if (indexValue < 0 || indexValue >= arraySym->staticSize) {
+        if (indexNode->nodeType == LITERAL) {
+            hasConstIndex = 1;
+            indexValue = parseInt(indexNode->start, indexNode->length);
+        } else if (indexNode->nodeType == VARIABLE) {
+            Symbol idxSym = lookupSymbol(context->current, indexNode->start, indexNode->length);
+            if (idxSym && idxSym->isConst && idxSym->hasConstVal) {
+                hasConstIndex = 1;
+                indexValue = idxSym->constVal;
+            }
+        }
+
+        if (hasConstIndex && (indexValue < 0 || indexValue >= arraySym->staticSize)) {
             char msg[100];
             snprintf(msg, sizeof(msg), "Array index %d out of bounds [0, %d)", indexValue, arraySym->staticSize);
             REPORT_ERROR(ERROR_INVALID_EXPRESSION, indexNode, context, msg);
@@ -93,7 +106,7 @@ int validateArrayLiteralInit(ASTNode arrLitNode, DataType expectedType, int expe
     ASTNode elem = arrLitNode->children;
 
     while (elem) {
-        DataType elemType = getExpressionType(elem, context);
+        DataType elemType = getExpressionType(elem, context, expectedType);
         CompatResult compat = areCompatible(expectedType, elemType);
 
         if (elemType == TYPE_UNKNOWN || compat == COMPAT_ERROR) {
@@ -277,12 +290,18 @@ StructType createStructType(ASTNode node, TypeCheckContext context) {
     structType->fieldCount = 0;
     structType->size = 0;
 
+    Symbol selfSym = lookupSymbolCurrentOnly(context->current, node->start, node->length);
+    if(selfSym){
+        selfSym->structType = structType;
+    }
+
     ASTNode fieldList = node->children;
     if (fieldList && fieldList->nodeType == STRUCT_FIELD_LIST) {
         ASTNode field = fieldList->children;
         StructField last = NULL;
 
         while (field) {
+            /* todo: bring struct field validation logic to his own function */
             if (field->nodeType == STRUCT_FIELD && field->children) {
                 StructField structField = malloc(sizeof(struct StructField));
                 if (!structField) {
@@ -297,7 +316,7 @@ StructType createStructType(ASTNode node, TypeCheckContext context) {
                 structField->nameLength = field->length;
                 structField->type = type;
                 if (type == TYPE_STRUCT) {
-                    Symbol structSymbol = lookupSymbol(context->current, field->children->start, field->children->length);
+                    Symbol structSymbol = lookupSymbol(context->current, field->children->children->start, field->children->children->length);
                     if (!structSymbol || structSymbol->symbolType != SYMBOL_TYPE) {
                         REPORT_ERROR(ERROR_UNDEFINED_SYMBOL, field->children, context, "Undefined struct type in field declaration");
                         free(structField);
@@ -305,6 +324,13 @@ StructType createStructType(ASTNode node, TypeCheckContext context) {
                         return NULL;
                     }
                     structField->structType = structSymbol->structType;
+
+                    if(pointerLevel == 0 && structSymbol->structType == structType){
+                        REPORT_ERROR(ERROR_INVALID_EXPRESSION, field->children, context, "Struct cannot contain itself directly");
+                        free(structField);
+                        free(structType);
+                        return NULL;
+                    }
                 }
                 structField->isPointer = (pointerLevel > 0);
                 structField->pointerLevel = pointerLevel;
@@ -362,18 +388,20 @@ int validateStructDef(ASTNode node, TypeCheckContext context) {
         free(tempText);
         return 0;
     }
+
+    Symbol structSymbol = addSymbolFromNode(context->current, node, TYPE_STRUCT);
+    if(!structSymbol) return 0;
+
+    structSymbol->symbolType = SYMBOL_TYPE;
+    structSymbol->structType = NULL;
+
     StructType structType = createStructType(node, context);
     if (!structType) {
         REPORT_ERROR(ERROR_INVALID_EXPRESSION, node, context, "Failed to create struct type");
         return 0;
     };
-    Symbol structSymbol = addSymbolFromNode(context->current, node, TYPE_STRUCT);
-    if (!structSymbol) {
-        free(structType);
-        return 0;
-    }
+    
     structSymbol->structType = structType;
-    structSymbol->symbolType = SYMBOL_TYPE;
     return 1;
 }
 
@@ -417,9 +445,7 @@ int validateStructVarDec(ASTNode node, TypeCheckContext context) {
 /* scalars */
 
 
-int validateScalarInitialization(Symbol newSymbol, ASTNode node,
-                                 DataType varType, int isConst, int isMemRef,
-                                 TypeCheckContext context) {
+int validateScalarInitialization(Symbol newSymbol, ASTNode node, DataType varType, int isConst, int isMemRef, TypeCheckContext context) {
     ASTNode initExprForType = node->children->brothers->children;
     ASTNode initExpr = isMemRef ?
         node->children->brothers->children->children :
@@ -440,7 +466,7 @@ int validateScalarInitialization(Symbol newSymbol, ASTNode node,
         updateConstMemRef(newSymbol, initExpr, context);
     }
 
-    DataType initType = getExpressionType(initExprForType, context);
+    DataType initType = getExpressionType(initExprForType, context, varType);
     if (initType == TYPE_UNKNOWN) {
         reportErrorWithText(ERROR_INTERNAL_TYPECHECKER_ERROR, node, context,
                           "Cannot determine initialization type");
@@ -673,8 +699,9 @@ int validateAssignment(ASTNode node, TypeCheckContext context) {
     }
 
     /* Handle variable assignment */
+    Symbol sym = NULL;
     if (left->nodeType == VARIABLE) {
-        Symbol sym = lookupSymbolOrError(context, left);
+        sym = lookupSymbolOrError(context, left);
         if (!sym) return 0;
 
         if (sym->symbolType == SYMBOL_FUNCTION) {
@@ -730,13 +757,14 @@ int validateAssignment(ASTNode node, TypeCheckContext context) {
     }
 
     /* Type compatibility checking */
-    DataType leftType = getExpressionType(leftForType, context);
+    DataType expectedLeftType = sym ? sym->type : TYPE_UNKNOWN;
+    DataType leftType = getExpressionType(leftForType, context, expectedLeftType);
     if (leftType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_EXPRESSION_TYPE_UNKNOWN_LHS, leftForType, context, "Cannot determine type of left-hand side");
         return 0;
     }
 
-    DataType rightType = getExpressionType(rightForType, context);
+    DataType rightType = getExpressionType(rightForType, context, leftType);
     if (rightType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_EXPRESSION_TYPE_UNKNOWN_RHS, rightForType, context, "Cannot determine type of right-hand side");
         return 0;
@@ -974,7 +1002,7 @@ int validateFunctionDef(ASTNode node, TypeCheckContext context) {
             REPORT_ERROR(ERROR_MISSING_RETURN_VALUE, node, context, "Non-void function missing return statement");
             success = 0;
         } else {
-            success = typeCheckNode(bodyNode, context);
+            success = typeCheckNode(bodyNode, context, returnType);
         }
     }
 
@@ -1023,7 +1051,7 @@ int validateBuiltinFunctionCall(ASTNode node, TypeCheckContext context) {
 
         arg = argListNode->children;
         for (int i = 0; i < argCount && arg != NULL; i++) {
-            DataType argType = getExpressionType(arg, context);
+            DataType argType = getExpressionType(arg, context, TYPE_I32); // I32 placeholder for testing ?
             if (argType == TYPE_UNKNOWN) {
                 free(argTypes);
                 return 0;
@@ -1082,7 +1110,7 @@ int validateUserDefinedFunctionCall(ASTNode node, TypeCheckContext context) {
     arg = argListNode->children;
 
     while (param != NULL && arg != NULL) {
-        DataType argType = getExpressionType(arg, context);
+        DataType argType = getExpressionType(arg, context, param->type);
         if (argType == TYPE_UNKNOWN) {
             return 0;
         }
@@ -1129,7 +1157,7 @@ int validateReturnStatement(ASTNode node, TypeCheckContext context) {
     }
 
     /* Get actual return type */
-    DataType returnType = getExpressionType(node->children, context);
+    DataType returnType = getExpressionType(node->children, context, expectedType);
     if (returnType == TYPE_UNKNOWN) {
         return 0;
     }
@@ -1142,7 +1170,8 @@ int validateReturnStatement(ASTNode node, TypeCheckContext context) {
 
     /* Special handling for pointer returns */
     if (expectedType == TYPE_POINTER || returnType == TYPE_POINTER) {
-        if (expectedType != TYPE_POINTER || returnType != TYPE_POINTER) {
+        CompatResult compat = areCompatible(expectedType, returnType);
+        if (compat == COMPAT_ERROR) {
             repError(ERROR_RETURN_TYPE_MISMATCH, "Cannot return pointer from non-pointer function or vice versa");
             return 0;
         }
@@ -1196,9 +1225,9 @@ int validateCastExpression(ASTNode node, TypeCheckContext context) {
     }
     ASTNode sourceExpr = node->children;
     ASTNode targetTypeNode = node->children->brothers;
-    DataType sourceType = getExpressionType(sourceExpr, context);
-    if (sourceType == TYPE_UNKNOWN) return 0;
     DataType targetType = getDataTypeFromNode(targetTypeNode->nodeType);
+    DataType sourceType = getExpressionType(sourceExpr, context, targetType);
+    if (sourceType == TYPE_UNKNOWN) return 0;
     if (targetType == TYPE_UNKNOWN) {
         REPORT_ERROR(ERROR_INVALID_CAST_TARGET, node, context, "Invalid cast target type");
         return 0;

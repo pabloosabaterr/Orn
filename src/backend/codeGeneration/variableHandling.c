@@ -9,7 +9,14 @@ int isFloatingPoint(IrDataType type){
 int getTypeSize(IrDataType type){
     switch(type){
         case IR_TYPE_BOOL:   return 1;
-        case IR_TYPE_INT:    return 4;
+        case IR_TYPE_I8:    return 1;
+        case IR_TYPE_U8:    return 1;
+        case IR_TYPE_I16:   return 2;
+        case IR_TYPE_U16:   return 2;
+        case IR_TYPE_I32:   return 4;
+        case IR_TYPE_U32:   return 4;
+        case IR_TYPE_I64:   return 8;
+        case IR_TYPE_U64:   return 8;
         case IR_TYPE_FLOAT:  return 4;
         case IR_TYPE_DOUBLE: return 8;
         case IR_TYPE_STRING: return 8; // strings are pointers also
@@ -19,18 +26,32 @@ int getTypeSize(IrDataType type){
 }
 
 const char *getParamIntReg(int index, IrDataType type) {
+    static const char *regs8[]  = {"%dil", "%sil", "%dl",  "%cl",  "%r8b", "%r9b"};
+    static const char *regs16[] = {"%di",  "%si",  "%dx",  "%cx",  "%r8w", "%r9w"};
     static const char *regs32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
-    static const char *regs64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+    static const char *regs64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8",  "%r9"};
     
     if (index < 0 || index >= 6) return NULL;
     
-    return (type == IR_TYPE_INT) ? regs32[index] : regs64[index];
+    switch (getTypeSize(type)) {
+        case 1: return regs8[index];
+        case 2: return regs16[index];
+        case 4: return regs32[index];
+        default: return regs64[index];
+    }
 }
 
 const char *getIntSuffix(IrDataType type){
     switch (type) {
         case IR_TYPE_BOOL:  return "b";
-        case IR_TYPE_INT:   return "l";
+        case IR_TYPE_I8:   return "b";
+        case IR_TYPE_U8:   return "b";
+        case IR_TYPE_I16:  return "w";
+        case IR_TYPE_U16:  return "w";
+        case IR_TYPE_I32:   return "l";
+        case IR_TYPE_U32:   return "l";
+        case IR_TYPE_I64:   return "q";
+        case IR_TYPE_U64:   return "q";
         default:            return "q";
     }
 }
@@ -38,32 +59,54 @@ const char *getIntSuffix(IrDataType type){
 const char *getIntReg(const char *base, IrDataType type) {
     switch (type) {
         case IR_TYPE_BOOL:
+        case IR_TYPE_I8:
+        case IR_TYPE_U8:
             if (strcmp(base, "a") == 0)  return "%al";
             if (strcmp(base, "b") == 0)  return "%bl";
             if (strcmp(base, "c") == 0)  return "%cl";
             if (strcmp(base, "d") == 0)  return "%dl";
             if (strcmp(base, "di") == 0) return "%dil";
             if (strcmp(base, "si") == 0) return "%sil";
+            if (strcmp(base, "8") == 0)  return "%r8b";
+            if (strcmp(base, "9") == 0)  return "%r9b";
             break;
-            
-        case IR_TYPE_INT:
+
+        case IR_TYPE_I16:
+        case IR_TYPE_U16:
+            if (strcmp(base, "a") == 0)  return "%ax";
+            if (strcmp(base, "b") == 0)  return "%bx";
+            if (strcmp(base, "c") == 0)  return "%cx";
+            if (strcmp(base, "d") == 0)  return "%dx";
+            if (strcmp(base, "di") == 0) return "%di";
+            if (strcmp(base, "si") == 0) return "%si";
+            if (strcmp(base, "8") == 0)  return "%r8w";
+            if (strcmp(base, "9") == 0)  return "%r9w";
+            break;
+
+        case IR_TYPE_I32:
+        case IR_TYPE_U32:
             if (strcmp(base, "a") == 0)  return "%eax";
             if (strcmp(base, "b") == 0)  return "%ebx";
             if (strcmp(base, "c") == 0)  return "%ecx";
             if (strcmp(base, "d") == 0)  return "%edx";
             if (strcmp(base, "di") == 0) return "%edi";
             if (strcmp(base, "si") == 0) return "%esi";
+            if (strcmp(base, "8") == 0)  return "%r8d";
+            if (strcmp(base, "9") == 0)  return "%r9d";
             break;
             
-        default:
+        default: /* I64, U64, pointers, etc. */
             if (strcmp(base, "a") == 0)  return "%rax";
             if (strcmp(base, "b") == 0)  return "%rbx";
             if (strcmp(base, "c") == 0)  return "%rcx";
             if (strcmp(base, "d") == 0)  return "%rdx";
             if (strcmp(base, "di") == 0) return "%rdi";
             if (strcmp(base, "si") == 0) return "%rsi";
+            if (strcmp(base, "8") == 0)  return "%r8"; 
+            if (strcmp(base, "9") == 0)  return "%r9";
             break;
     }
+    printf("fallback reg for type %d and base %s\n", type, base);
     return "%rax"; 
 }
 

@@ -13,6 +13,8 @@
 
 #include "parserInternal.h"
 
+#include <stdio.h>
+
 #include <stdlib.h>
 
 /**
@@ -30,8 +32,7 @@ ASTNode parseArrayDec(TokenList* list, size_t* pos, Token* varName){
 
     Token* sizeToken = &list->tokens[*pos];
     NodeTypes sizeType = detectLitType(sizeToken, list, pos);
-
-    if(sizeType != REF_INT && sizeType != VARIABLE){
+    if(!isIntTypeNode(sizeType) && sizeType != VARIABLE){
         reportError(ERROR_INVALID_EXPRESSION, createErrorContextFromParser(list, pos), "Array size must be an integer literal or variable");
         freeAST(typeNode);
         return NULL;

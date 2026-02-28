@@ -14,6 +14,7 @@
 #define PARSER_H
 
 #include <stdint.h>
+#include <assert.h>
 #include <stddef.h>
 #include "lexer.h"
 
@@ -29,7 +30,15 @@ typedef enum {
     ARRAY_ACCESS,
 
     // type references
-    REF_INT,
+    REF_I8,
+    REF_I16,
+    REF_I32,
+    REF_I64,
+    REF_U8,
+    REF_U16,
+    REF_U32,
+    REF_U64,
+    REF_INT_UNRESOLVED,
     REF_STRING,
     REF_FLOAT,
     REF_BOOL,

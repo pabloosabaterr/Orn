@@ -89,7 +89,15 @@ static const NodeTypeMap nodeTypeMapping[] = {
     {STRUCT_FIELD,           "STRUCT_FIELD"},
     {STRUCT_VARIABLE_DEFINITION, "STRUCT_VAR_DEF"},
     {MEMBER_ACCESS,          "MEMBER_ACCESS"},
-    {REF_INT,                "TYPE_INT"},
+    {REF_I8,                "TYPE_I8"},
+    {REF_I16,               "TYPE_I16"},
+    {REF_I32,               "TYPE_I32"},
+    {REF_I64,               "TYPE_I64"},
+    {REF_U8,                "TYPE_U8"},
+    {REF_U16,               "TYPE_U16"},
+    {REF_U32,               "TYPE_U32"},
+    {REF_U64,               "TYPE_U64"},
+    {REF_INT_UNRESOLVED,     "TYPE_INT_UNRESOLVED"},
     {REF_STRING,             "TYPE_STRING"},
     {REF_FLOAT,              "TYPE_FLOAT"},
     {REF_BOOL,               "TYPE_BOOL"},
@@ -192,7 +200,7 @@ NodeTypes detectLitType(const Token *tok, TokenList *list, size_t *pos) {
             if (containsFChar(val, len - 1, hasDot, len)) return REF_FLOAT;
             return REF_DOUBLE;
         }
-        return REF_INT;
+        return REF_INT_UNRESOLVED; // int type will be resolved on semantic based on suffix and left side type
     }
 
     /* Identifier / variable */
