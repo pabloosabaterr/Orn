@@ -1,3 +1,4 @@
+ASTNode parseDoWhileLoop(TokenList* list, size_t* pos);
 /**
  * @file parserInternal.h
  * @brief Internal definitions shared across parser translation units.

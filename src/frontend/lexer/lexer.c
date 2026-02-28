@@ -45,6 +45,7 @@ static TokenType lookUpKeyword(const char * s, size_t len) {
 			if(len == 4 && memcmp(s, "char", 4) == 0) return TK_I8; /* for now */
 			break;
 		case 'd': 
+			if (len == 2 && memcmp(s, "do", 2) == 0) return TK_DO;
 			if (len == 6 && memcmp(s, "double", 6) == 0) return TK_DOUBLE;
 			break;
 		case 'e':

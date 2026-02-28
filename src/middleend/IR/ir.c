@@ -1050,6 +1050,39 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx,
             break;
         }
 
+        case DO_WHILE_STATEMENT: {
+            ASTNode body = node->children;
+            ASTNode cond = body->brothers;
+
+            int startLab = ctx->nextLabelNum++;
+            int endLab = ctx->nextLabelNum++;
+
+            emitLabel(ctx, startLab);
+            generateStatementIr(ctx, body, typeCtx, TYPE_VOID);
+            IrOperand condOp = generateExpressionIr(ctx, cond, typeCtx, TYPE_BOOL);
+            emitIfFalse(ctx, condOp, endLab);
+            emitGoto(ctx, startLab);
+            emitLabel(ctx, endLab);
+
+            break;
+        }
+            ASTNode cond = node->children;
+            ASTNode body = cond->brothers;
+
+            int startLab = ctx->nextLabelNum++;
+            int endLab = ctx->nextLabelNum++;
+
+            emitLabel(ctx, startLab);
+
+            IrOperand condOp = generateExpressionIr(ctx, cond, typeCtx, TYPE_BOOL);
+            emitIfFalse(ctx, condOp, endLab);
+            generateStatementIr(ctx, body, typeCtx, TYPE_VOID);
+            emitGoto(ctx, startLab);
+            emitLabel(ctx, endLab);
+
+            break;
+        }
+
         case RETURN_STATEMENT: {
             if (node->children && typeCtx->currentFunction->type != TYPE_STRUCT) {
                 IrOperand retVal = generateExpressionIr(ctx, node->children, typeCtx, typeCtx->currentFunction->type);

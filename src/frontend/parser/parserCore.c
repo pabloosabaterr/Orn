@@ -26,6 +26,7 @@ const StatementHandler statementHandlers[] = {
     {TK_FN,      parseFunction},
     {TK_RETURN,  parseReturnStatement},
     {TK_WHILE,   parseLoop},
+    {TK_DO,      parseDoWhileLoop},
     {TK_LBRACE,  parseBlock},
     {TK_STRUCT,  parseStruct},
     {TK_IF,      parseIf},

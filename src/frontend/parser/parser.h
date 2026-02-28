@@ -128,6 +128,7 @@ typedef enum {
     ELSE_BRANCH,
     BLOCK_EXPRESSION,
     LOOP_STATEMENT,
+    DO_WHILE_STATEMENT,
 
     // Functions
     FUNCTION_DEFINITION,

@@ -124,6 +124,7 @@ int typeCheckNode(ASTNode node, TypeCheckContext context, DataType expectedType)
         case TERNARY_ELSE_EXPR:
         case IF_CONDITIONAL:
         case LOOP_STATEMENT:
+        case DO_WHILE_STATEMENT:
         case IF_TRUE_BRANCH:
         case ELSE_BRANCH:
             success = typeCheckChildren(node, context, expectedType);

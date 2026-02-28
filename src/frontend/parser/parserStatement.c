@@ -1,3 +1,20 @@
+ASTNode parseDoWhileLoop(TokenList* list, size_t* pos){
+    if(*pos >= list->count) return NULL;
+    Token* doToken = &list->tokens[*pos];
+    ADVANCE_TOKEN(list, pos);
+
+    ASTNode loopBody, condition, loopNode;
+    EXPECT_TOKEN(list, pos, TK_LBRACE, ERROR_EXPECTED_OPENING_BRACE, "Expected '{' to start do-while body");
+    PARSE_OR_FAIL(loopBody, parseBlock(list, pos));
+    EXPECT_TOKEN(list, pos, TK_WHILE, ERROR_EXPECTED_WHILE, "Expected 'while' after do-while body");
+    ADVANCE_TOKEN(list, pos);
+    PARSE_OR_FAIL(condition, parseExpression(list, pos, PREC_NONE));
+    CREATE_NODE_OR_FAIL(loopNode, doToken, DO_WHILE_STATEMENT, list, pos);
+
+    loopNode->children = loopBody;
+    loopBody->brothers = condition;
+    return loopNode;
+}
 /**
  * @file parserStatement.c
  * @brief Statement-level parsing and control-flow constructs.
