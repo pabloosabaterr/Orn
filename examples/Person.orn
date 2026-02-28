@@ -1,3 +1,5 @@
+import "../lib/stdio";
+
 struct Person {
     age: int
     score: int
@@ -11,6 +13,6 @@ player.score = 100;
 const bonus: int = 10;
 player.score += bonus;
 
-print(player.age);    // Should print 25
-print("\n");
-print(player.score);  // Should print 110
+print_int(player.age);    // Should print 25
+print_string("\n");
+print_int(player.score);  // Should print 110

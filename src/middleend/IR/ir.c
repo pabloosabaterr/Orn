@@ -944,6 +944,18 @@ void generateStatementIr(IrContext *ctx, ASTNode node, TypeCheckContext typeCtx,
                     // todo: handle error properly instead of silently returning and generating incorrect IR
                     return;
                 }
+
+                ASTNode initValueNode = node->children->brothers->children;
+                if (sym->isPointer && sym->baseType == TYPE_I8 &&
+                    initValueNode && initValueNode->nodeType == LITERAL &&
+                    initValueNode->children && initValueNode->children->nodeType == REF_STRING) {
+
+                    IrOperand var = createVar(node->start, node->length, IR_TYPE_POINTER);
+                    IrOperand strConst = createStringConst(initValueNode->start, initValueNode->length);
+                    emitBinary(ctx, IR_STRING_INIT, var, strConst, createNone());
+                    break;
+                }
+
                 IrOperand val = generateExpressionIr(ctx, node->children->brothers->children, typeCtx, sym->type);
 
                 ASTNode typeRefChild = node->children->children;
@@ -1121,6 +1133,7 @@ static const char *opCodeToString(IrOpCode op) {
         case IR_MEMBER_LOAD: return "MEM_LOAD";
         case IR_MEMBER_STORE: return "MEM_STORE";
         case IR_ALLOC_STRUCT: return "ALLOC_STRUCT";
+        case IR_STRING_INIT: return "STRING_INIT";
         default: return "UNKNOWN";
     }
 }

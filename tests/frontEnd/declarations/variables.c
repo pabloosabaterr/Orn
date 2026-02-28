@@ -17,7 +17,7 @@ void test_let_bool(void) {
 }
 
 void test_let_string(void) {
-    assertPass("let s: string = \"hello\";");
+    assertPass("let s: str = \"hello\";");
 }
 
 void test_const_without_init_fails(void) {
@@ -49,7 +49,7 @@ void test_let_reassignment(void) {
 }
 
 void test_type_mismatch_float_to_string_fails(void) {
-    assertFail("const s: string = 1.5f;");
+    assertFail("const s: str = 1.5f;");
 }
 
 void test_type_mismatch_string_to_float_fails(void) {
@@ -69,7 +69,7 @@ void test_type_mismatch_int_to_bool_fails(void) {
 }
 
 void test_type_mismatch_bool_to_string_fails(void) {
-    assertFail("const s: string = false;");
+    assertFail("const s: str = false;");
 }
 
 void test_type_mismatch_bool_to_float_fails(void) {

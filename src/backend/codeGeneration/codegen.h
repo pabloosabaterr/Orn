@@ -66,6 +66,7 @@ void genComparison(CodeGenContext *ctx, IrInstruction *inst);
 void genLogical(CodeGenContext *ctx, IrInstruction *inst);
 void genCast(CodeGenContext *ctx, IrInstruction *inst);
 void generateInstruction(CodeGenContext *ctx, IrInstruction *inst, int *paramCount);
+void genStringInit(CodeGenContext *ctx, IrInstruction *inst);
 
 char *generateAssembly(IrContext *ir, const char *moduleName, ModuleInterface **imports, int importCount);
 int writeAssemblyToFile(const char *assembly, const char *filename);

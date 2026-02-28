@@ -1,3 +1,5 @@
+import "../lib/stdio";
+
 fn fibonacci(n: int) -> int {
     if (n <= 1) {
         return n;
@@ -7,4 +9,4 @@ fn fibonacci(n: int) -> int {
 }
 
 const result: int = fibonacci(10);
-print(result);
+print_int(result);

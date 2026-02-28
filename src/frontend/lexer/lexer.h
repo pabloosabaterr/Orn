@@ -40,6 +40,7 @@ typedef enum {
 	TK_U32,
 	TK_U64,
 
+	TK_STR_WRAP,
 	TK_STRING,
 	TK_FLOAT,
 	TK_BOOL,

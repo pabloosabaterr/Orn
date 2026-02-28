@@ -1,12 +1,14 @@
+import "../lib/stdio";
+
 // Count from 0 up to ten
 
 let x: int = 0;
 const newLine: string = ",\n";
 
 while x <= 10 {
-    print(x);
+    print_int(x);
     if x < 10 {
-        print(newLine);
+        print_string(newLine);
     }
     x++;
 };

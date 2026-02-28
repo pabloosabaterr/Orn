@@ -1,0 +1,8 @@
+export fn strlen(s: str) -> i64 {
+    let i: i64 = 0;
+    while *s != 0 {
+        ++i;
+        s = s + 1; // todo: fix pointer arithmetic should allow increments
+    }
+    return i;
+}
