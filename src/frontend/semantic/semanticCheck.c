@@ -473,6 +473,16 @@ int validateScalarInitialization(Symbol newSymbol, ASTNode node, DataType varTyp
         return 0;
     }
 
+    if (newSymbol->isPointer && initType == TYPE_STRING) {
+        if (newSymbol->baseType != TYPE_I8) {
+            REPORT_ERROR(ERROR_TYPE_MISMATCH_STRING_TO_INT, node, context,
+                        "String literals can only be assigned to char* (i8*) pointers");
+            return 0;
+        }
+        newSymbol->isInitialized = 1;
+        return 1;  /* Skip areCompatible */
+    }
+
     CompatResult compat = areCompatible(newSymbol->type, initType);
     if (compat == COMPAT_ERROR) {
         reportErrorWithText(variableErrorCompatibleHandling(varType, initType),

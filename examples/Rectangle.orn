@@ -1,3 +1,5 @@
+import "../lib/stdio";
+
 struct Rectangle {
     width: int
     height: int
@@ -14,9 +16,9 @@ const double_height: int = rect.height * 2;
 const perimeter: int = double_width + double_height;
 
 print(rect.width);    // Should print 5
-print("\n");
+print_string("\n"); 
 print(rect.height);   // Should print 3
-print("\n");
+print_string("\n"); 
 print(area);          // Should print 15
-print("\n");
+print_string("\n"); 
 print(perimeter);     // Should print 16

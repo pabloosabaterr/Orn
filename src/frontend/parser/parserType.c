@@ -40,6 +40,7 @@ NodeTypes getTypeNodeFromToken(TokenType type){
         case TK_U32:    return REF_U32;
         case TK_U64:    return REF_U64;
         case TK_STRING: return REF_STRING;
+        case TK_STR_WRAP: return REF_I8; /* str wrap is just syntactic sugar for *i8 */
         case TK_FLOAT:  return REF_FLOAT;
         case TK_BOOL:   return REF_BOOL;
         case TK_VOID:   return REF_VOID;
@@ -82,6 +83,7 @@ int isTypeToken(TokenType type){
             type == TK_U32 ||
             type == TK_U64 ||
             type == TK_STRING ||
+            type == TK_STR_WRAP ||
             type == TK_FLOAT ||
             type == TK_BOOL ||
             type == TK_DOUBLE ||
@@ -111,7 +113,11 @@ ASTNode parseType(TokenList* list, size_t* pos){
     Token* typeToken = &list->tokens[*pos];
     ASTNode typeNode;
 
-    if(isTypeToken(typeToken->type)){
+    if(typeToken->type == TK_STR_WRAP){
+        pointerCount++;
+        CREATE_NODE_OR_FAIL(typeNode, typeToken, REF_I8, list, pos);
+        ADVANCE_TOKEN(list, pos);
+    } else if(isTypeToken(typeToken->type)){
         NodeTypes baseType = getTypeNodeFromToken(typeToken->type);
         CREATE_NODE_OR_FAIL(typeNode, typeToken, baseType, list, pos);
         ADVANCE_TOKEN(list, pos);

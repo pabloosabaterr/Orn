@@ -32,7 +32,7 @@ void test_mixed_types_program(void) {
         "let i: int = 10;\n"
         "let f: float = 3.14f;\n"
         "let b: bool = true;\n"
-        "let s: string = \"hello\";\n"
+        "let s: str = \"hello\";\n"
         "if (b) { i = i + 1; }"
     );
 }

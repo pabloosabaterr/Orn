@@ -142,13 +142,26 @@ ASTNode getBaseTypeFromPointerChain(ASTNode typeRefNode, int *outPointerLevel) {
 
 int getStackSize(DataType type) {
     switch (type) {
-        case TYPE_I8:     case TYPE_U8:     case TYPE_BOOL:   return 1;
-        case TYPE_I16:    case TYPE_U16:                      return 2;
-        case TYPE_I32:    case TYPE_U32:    
-        case TYPE_FLOAT:                                      return 4;
-        case TYPE_I64:    case TYPE_U64:    case TYPE_DOUBLE: 
-        case TYPE_STRING: case TYPE_STRUCT: case TYPE_POINTER: return 8;
-        default: return 4;
+    case TYPE_I8:
+    case TYPE_U8:
+    case TYPE_BOOL:
+        return 1;
+    case TYPE_I16:
+    case TYPE_U16:
+        return 2;
+    case TYPE_I32:
+    case TYPE_U32:
+    case TYPE_FLOAT:
+        return 4;
+    case TYPE_I64:
+    case TYPE_U64:
+    case TYPE_DOUBLE:
+    case TYPE_STRING:
+    case TYPE_STRUCT:
+    case TYPE_POINTER:
+        return 8;
+    default:
+        return 4;
     }
 }
 
@@ -164,6 +177,7 @@ CompatResult areCompatible(DataType target, DataType source) {
     if (source == TYPE_NULL && target == TYPE_POINTER) return COMPAT_OK;
     if (target == TYPE_NULL && source == TYPE_POINTER) return COMPAT_OK;
     if (source == TYPE_NULL && target == TYPE_NULL)    return COMPAT_OK;
+    if (target == TYPE_POINTER && source == TYPE_STRING) return COMPAT_OK;
 
     /* Integer widening: same signedness, source rank <= target rank */
     if (isIntegerType(target) && isIntegerType(source)) {
@@ -429,7 +443,12 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context, DataType expe
                 case REF_U32:    return TYPE_U32;
                 case REF_U64:    return TYPE_U64;
                 case REF_INT_UNRESOLVED: {
-                    return inferIntLitType(expectedType);
+                    DataType resolved = inferIntLitType(expectedType);
+                    NodeTypes resolvedNode = symbolTypeToNodeType(resolved);
+                    if (resolvedNode != null_NODE) {
+                        node->children->nodeType = resolvedNode;
+                    }
+                    return resolved;
                 }
                 case REF_FLOAT:  return TYPE_FLOAT;
                 case REF_BOOL:   return TYPE_BOOL;

@@ -1,4 +1,5 @@
 import "str/itoa";
+import "str/str";
 
 export fn print_int(n: i64) -> void {
     let buf: char[32];
@@ -12,4 +13,9 @@ export fn print_int(n: i64) -> void {
     let end: *char = ptr + 31;
     let len: i64 = end - start;
     syscall(1, 1, start, len, 0, 0, 0);
+}
+
+export fn print_str(s: *char) -> void {
+    let len: i64 = strlen(s);
+    syscall(1, 1, s, len, 0, 0, 0); // todo: bug when calling strlen directly on the call
 }

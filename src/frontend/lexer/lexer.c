@@ -74,10 +74,11 @@ static TokenType lookUpKeyword(const char * s, size_t len) {
 			break;
 		case 'r':
 			if (len == 6 && memcmp(s, "return", 6) == 0) return TK_RETURN;
+			if (len == 5 && memcmp(s, "rostr", 5) == 0) return TK_STRING;
 			break;
 		case 's':
+			if(len == 3 && memcmp(s, "str", 3) == 0) return TK_STR_WRAP;
 			if (len == 6 && memcmp(s, "struct", 6) == 0) return TK_STRUCT;
-			if (len == 6 && memcmp(s, "string", 6) == 0) return TK_STRING;
 			break;
 		case 't':
 			if (len == 4 && memcmp(s, "true", 4) == 0) return TK_TRUE;

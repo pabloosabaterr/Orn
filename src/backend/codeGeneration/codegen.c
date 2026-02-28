@@ -104,6 +104,11 @@ void loadOp(CodeGenContext *ctx, IrOperand *op, const char *reg){
             break;
         case OPERAND_VAR:
         case OPERAND_TEMP: {
+            VarLoc *v = findVar(ctx, op->value.var.name, op->value.var.nameLen);
+            if (v && v->isAddresable && op->dataType == IR_TYPE_POINTER) {
+                emitInstruction(ctx, "leaq %d(%%rbp), %s", v->stackOffset, getIntReg(reg, IR_TYPE_I64));
+                return;
+            }
             int off = op->type == OPERAND_VAR 
                 ? getVarOffset(ctx, op->value.var.name, op->value.var.nameLen) 
                 : getTempOffset(ctx, op->value.temp.tempNum, op->dataType);
@@ -638,6 +643,67 @@ void genMemberStore(CodeGenContext *ctx, IrInstruction *inst){
     }
 }
 
+void genStringInit(CodeGenContext *ctx, IrInstruction *inst) {
+    if (inst->result.type != OPERAND_VAR || inst->ar1.type != OPERAND_CONSTANT) {
+        return;
+    }
+
+    const char *varName = inst->result.value.var.name;
+    size_t varNameLen = inst->result.value.var.nameLen;
+
+    /* Extract raw string content (strip quotes) */
+    const char *raw = inst->ar1.value.constant.str.stringVal;
+    size_t rawLen = inst->ar1.value.constant.str.len;
+    if (rawLen >= 2 && raw[0] == '"' && raw[rawLen - 1] == '"') {
+        raw++;
+        rawLen -= 2;
+    }
+
+    /* Calculate actual byte count (processing escape sequences) */
+    size_t byteCount = 0;
+    for (size_t i = 0; i < rawLen; i++) {
+        byteCount++;
+        if (raw[i] == '\\' && i + 1 < rawLen) {
+            i++;  /* skip the escaped char */
+        }
+    }
+    size_t totalSize = byteCount + 1;  /* +1 for null terminator */
+
+    /* Allocate addressable stack space */
+    addLocalVar(ctx, varName, varNameLen, IR_TYPE_I8);
+    markVarAsAddresable(ctx, varName, varNameLen, (int)totalSize);
+
+    /* Get the base offset of the buffer on stack */
+    VarLoc *v = findVar(ctx, varName, varNameLen);
+    if (!v) return;
+    int baseOff = v->stackOffset;
+
+    /* Store each byte inline */
+    int pos = 0;
+    for (size_t i = 0; i < rawLen; i++) {
+        int ch;
+        if (raw[i] == '\\' && i + 1 < rawLen) {
+            i++;
+            switch (raw[i]) {
+                case 'n':  ch = '\n'; break;
+                case 't':  ch = '\t'; break;
+                case 'r':  ch = '\r'; break;
+                case '\\': ch = '\\'; break;
+                case '"':  ch = '"';  break;
+                case '0':  ch = '\0'; break;
+                default:   ch = raw[i]; break;
+            }
+        } else {
+            ch = raw[i];
+        }
+        emitInstruction(ctx, "movb $%d, %d(%%rbp)", ch, baseOff + pos);
+        pos++;
+    }
+
+    /* Null terminator */
+    emitInstruction(ctx, "movb $0, %d(%%rbp)", baseOff + pos);
+}
+
 void genCall(CodeGenContext *ctx, IrInstruction *inst) {
     const char *fnName = inst->ar1.value.fn.name;
     size_t fnLen = inst->ar1.value.fn.nameLen;
@@ -1017,7 +1083,10 @@ void generateInstruction(CodeGenContext *ctx, IrInstruction *inst, int *paramCou
             
         case IR_MEMBER_STORE:
             genMemberStore(ctx, inst);
-            break;    
+            break;   
+        case IR_STRING_INIT:
+            genStringInit(ctx, inst);
+            break;
         default:
             emitComment(ctx, "Unknown instruction");
             break;

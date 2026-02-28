@@ -1,3 +1,5 @@
+import "../lib/stdio";
+
 // this is a simple add program
 
 fn add(a: int, b:int) -> int {
@@ -6,4 +8,4 @@ fn add(a: int, b:int) -> int {
 
 const x: int  = 10;
 const y: int = add(x, 5);
-print(y);
+print_int(y);
