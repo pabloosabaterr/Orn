@@ -563,7 +563,7 @@ DataType getExpressionType(ASTNode node, TypeCheckContext context, DataType expe
         case POST_INCREMENT:
         case POST_DECREMENT: {
             DataType operandType = getExpressionType(node->children, context, expectedType);
-            if (isIntegerType(operandType) || operandType == TYPE_FLOAT || operandType == TYPE_DOUBLE) {
+            if (isIntegerType(operandType) || operandType == TYPE_FLOAT || operandType == TYPE_DOUBLE || operandType == TYPE_POINTER) {
                 return operandType;
             }
             REPORT_ERROR(ERROR_INVALID_UNARY_OPERAND, node, context,
