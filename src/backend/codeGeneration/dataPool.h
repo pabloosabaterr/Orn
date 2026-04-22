@@ -1,3 +1,12 @@
+/**
+ * @file dataPool.h
+ * @brief Constant-data pool types and API for code generation.
+ *
+ * Exposes StringEntry, DoubleEntry, FloatEntry structures and
+ * functions for interning string, double, and float literals
+ * into the .data section during assembly generation.
+ */
+
 #ifndef DATA_POOL_H
 #define DATA_POOL_H
 

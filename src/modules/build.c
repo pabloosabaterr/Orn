@@ -1,3 +1,15 @@
+/**
+ * @file build.c
+ * @brief Multi-module build system and compilation orchestrator.
+ *
+ * Responsibilities:
+ *   - findModules(): recursive module discovery from imports
+ *   - topoSortModules(): topological sort for compilation order
+ *   - buildProject(): end-to-end build pipeline (lex → parse → typecheck → IR → codegen → link)
+ *   - extractImports(): extract import declarations from an AST
+ *   - resolveModulePath(): resolve a module name to a filesystem path
+ */
+
 #include "build.h"
 #include <stdio.h>
 #include <stdlib.h>

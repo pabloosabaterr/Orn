@@ -1,3 +1,14 @@
+/**
+ * @file dataPool.c
+ * @brief Constant-data pool management for code generation.
+ *
+ * Responsibilities:
+ *   - addStringLit(): intern and emit .data string constants
+ *   - addDoubleLit(): intern and emit .data double constants
+ *   - addFloatLit(): intern and emit .data float constants
+ *   - findStringLit(): de-duplicate string literals
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include "codegen.h"

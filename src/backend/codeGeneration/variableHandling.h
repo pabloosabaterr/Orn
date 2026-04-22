@@ -1,3 +1,12 @@
+/**
+ * @file variableHandling.h
+ * @brief Stack layout types and API for variable/temporary tracking.
+ *
+ * Exposes VarLoc, TempLoc structures and functions for managing
+ * stack slot allocation, register selection, and type-size queries
+ * during code generation.
+ */
+
 #ifndef VARIABLE_HANDLING_H
 #define VARIABLE_HANDLING_H
 

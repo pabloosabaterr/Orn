@@ -1,3 +1,12 @@
+/**
+ * @file codegen.h
+ * @brief Public API and context for x86-64 code generation.
+ *
+ * Exposes CodeGenContext, FuncInfo, and all code generation functions
+ * that translate IR instructions into AT&T-syntax x86-64 assembly.
+ * Include this header from any backend module that emits assembly.
+ */
+
 #ifndef CODEGEN_H
 #define CODEGEN_H
 

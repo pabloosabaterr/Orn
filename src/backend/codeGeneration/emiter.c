@@ -1,3 +1,13 @@
+/**
+ * @file emiter.c
+ * @brief Low-level assembly text emission helpers.
+ *
+ * Responsibilities:
+ *   - emitInstruction(): formatted instruction output to text buffer
+ *   - emitASMLabel() / emitLabelNum() / emitDataLabel(): label emission
+ *   - emitComment() / emitBlankLine(): readability helpers
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include "codegen.h"

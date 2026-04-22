@@ -1,3 +1,14 @@
+/**
+ * @file irHelpers.c
+ * @brief Parsing and comparison utilities for IR generation.
+ *
+ * Responsibilities:
+ *   - parseInt(): parse an integer from a source buffer
+ *   - parseFloat(): parse a floating-point value from a source buffer
+ *   - matchLit(): compare a buffer to a literal string
+ *   - bufferEqual(): length-prefixed buffer comparison
+ */
+
 #include <string.h>
 #include <ctype.h>
 #include <parser.h>

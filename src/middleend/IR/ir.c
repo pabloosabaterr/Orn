@@ -1,3 +1,18 @@
+/**
+ * @file ir.c
+ * @brief Intermediate Representation (IR) generation from the AST.
+ *
+ * Responsibilities:
+ *   - createIrContext() / freeIrContext()
+ *   - Operand constructors (createTemp, createVar, createConst, …)
+ *   - IR instruction emission (emitBinary, emitCopy, emitLabel, …)
+ *   - symbolTypeToIrType() / nodeTypeToIrType() / astOpToIrOp(): mappings
+ *   - generateExpressionIr(): expression → IR lowering
+ *   - generateStatementIr(): statement → IR lowering
+ *   - generateIr(): top-level AST → IR entry point
+ *   - printIR(): debug dump of the instruction list
+ */
+
 #include "ir.h"
 #include <stdlib.h>
 #include <stdio.h>

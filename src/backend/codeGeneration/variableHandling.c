@@ -1,3 +1,16 @@
+/**
+ * @file variableHandling.c
+ * @brief Stack variable and temporary location management for codegen.
+ *
+ * Responsibilities:
+ *   - addLocalVar() / addGlobalVar(): allocate stack slots for variables
+ *   - findVar() / getVarOffset(): variable location lookup
+ *   - addTemp() / findTemp() / getTempOffset(): temporary management
+ *   - markVarAsAddresable(): promote a variable to an addressable slot
+ *   - getIntReg() / getSSEReg(): register selection by type and size
+ *   - getTypeSize() / getIntSuffix() / getSSESuffix(): type utilities
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include "codegen.h"

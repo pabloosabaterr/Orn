@@ -1,3 +1,12 @@
+/**
+ * @file emiter.h
+ * @brief Assembly text emission utilities for code generation.
+ *
+ * Exposes helpers for writing labels, instructions, and comments
+ * into the CodeGenContext text buffer. Include from codegen modules
+ * that need to emit raw assembly text.
+ */
+
 #ifndef EMITER_H
 #define EMITER_H
 

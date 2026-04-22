@@ -1,3 +1,14 @@
+/**
+ * @file optimization.c
+ * @brief IR optimization passes.
+ *
+ * Responsibilities:
+ *   - constantFolding(): evaluate constant expressions at compile time
+ *   - copyProp(): propagate copies to eliminate redundant assignments
+ *   - deadCodeElimination(): remove unused instructions
+ *   - optimizeIR(): run iterative optimization pipeline at a given level
+ */
+
 #include "ir.h"
 #include <stdlib.h>
 #include "irHelpers.h"

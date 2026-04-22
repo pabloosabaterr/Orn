@@ -1,3 +1,12 @@
+/**
+ * @file ir.h
+ * @brief Intermediate Representation types, opcodes, and generation API.
+ *
+ * Exposes IrOpCode, IrDataType, IrOperand, IrInstruction, IrContext,
+ * and the functions for creating, emitting, and generating IR from
+ * a type-checked AST. Include from middleend and backend modules.
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 #include "semantic.h"

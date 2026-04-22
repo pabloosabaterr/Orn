@@ -1,3 +1,14 @@
+/**
+ * @file lexer.c
+ * @brief Tokenizer / lexical analysis implementation.
+ *
+ * Responsibilities:
+ *   - lex(): scan source text and produce a TokenList
+ *   - Token creation, keyword recognition, and literal scanning
+ *   - Whitespace / comment skipping and line tracking
+ *   - freeTokens(): deallocate a token list
+ */
+
 #include "lexer.h"
 #include <ctype.h>
 #include <stdlib.h>

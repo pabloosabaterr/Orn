@@ -1,3 +1,14 @@
+/**
+ * @file errors.c
+ * @brief Error database: definitions and messages for all compiler diagnostics.
+ *
+ * Responsibilities:
+ *   - errorDatabase[]: static table mapping ErrorCode → severity, message, hint
+ *   - Provides the single source of truth for all error/warning strings
+ *
+ * This file is data-only; no logic beyond the table lives here.
+ */
+
 #include "errorHandling.h"
 
 const ErrorInfo errorDatabase[] = {

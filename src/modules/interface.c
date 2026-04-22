@@ -1,3 +1,14 @@
+/**
+ * @file interface.c
+ * @brief Module interface extraction and symbol import logic.
+ *
+ * Responsibilities:
+ *   - extractExportsWithContext(): walk the AST to collect exported functions/structs
+ *   - addImportsToSymbolTable(): register imported symbols for type-checking
+ *   - dataTypeToString() / stringToDataType(): type ↔ string conversion
+ *   - freeModuleInterface(): memory cleanup
+ */
+
 #include "interface.h"
 
 #include <stdio.h>

@@ -1,3 +1,12 @@
+/**
+ * @file interface.h
+ * @brief Module interface types and API for cross-module imports/exports.
+ *
+ * Exposes ModuleInterface, ExportedFunction, ExportedStruct, and
+ * ExportedField structures along with functions for extracting exports,
+ * injecting imports into symbol tables, and type string conversions.
+ */
+
 #ifndef INTERFACE_H
 #define INTERFACE_H
 

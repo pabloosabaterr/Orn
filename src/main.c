@@ -1,3 +1,14 @@
+/**
+ * @file main.c
+ * @brief Compiler entry point and command-line interface driver.
+ *
+ * Responsibilities:
+ *   - Parse command-line arguments (input file, output, flags)
+ *   - Orchestrate the full compilation pipeline via buildProject()
+ *   - Process CLI flags: -o, -O, -v, --ast, --ir
+ *   - Print usage information
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

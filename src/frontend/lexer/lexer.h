@@ -1,3 +1,12 @@
+/**
+ * @file lexer.h
+ * @brief Public API for the Orn lexer (tokenizer).
+ *
+ * Exposes token types, the Token / TokenList structures, and the
+ * lex() entry point. Include this header from the parser or any
+ * module that needs to consume tokens.
+ */
+
 #ifndef LEXER_H
 #define LEXER_H
 

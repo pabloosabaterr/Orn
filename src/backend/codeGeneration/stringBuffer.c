@@ -1,3 +1,13 @@
+/**
+ * @file stringBuffer.c
+ * @brief Growable string buffer implementation.
+ *
+ * Responsibilities:
+ *   - sbCreate() / sbFree(): lifecycle management
+ *   - sbAppend() / sbAppendf() / sbAppendChar(): content appending
+ *   - sbEnsureCapacity(): automatic buffer growth
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

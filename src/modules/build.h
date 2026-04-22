@@ -1,3 +1,12 @@
+/**
+ * @file build.h
+ * @brief Multi-module build system API.
+ *
+ * Exposes Module, BuildContext structures and functions for
+ * discovering, sorting, compiling, and linking Orn modules.
+ * Include from main.c or any driver that orchestrates builds.
+ */
+
 #ifndef BUILD_H
 #define BUILD_H
 

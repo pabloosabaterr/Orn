@@ -1,3 +1,11 @@
+/**
+ * @file stringBuffer.h
+ * @brief Growable string buffer API for assembly text accumulation.
+ *
+ * Exposes the StringBuffer struct and append/format functions used
+ * by the code generator to build the final assembly output.
+ */
+
 #ifndef STRING_BUFFER_H
 #define STRING_BUFFER_H
 
