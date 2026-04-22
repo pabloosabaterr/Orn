@@ -1,3 +1,9 @@
+> [!WARNING]
+>
+> This project is being completly reworked at [Orn-rework](https://github.com/pabloosabaterr/Orn-rework)
+>
+> You can check the documentation about it at [Orn-documentation](https://pabloosabaterr.github.io/Orn-rework/)
+
 # Orn Lang
 
 *A modern low-level programming language with clear error messages and fast builds*
